@@ -12,7 +12,7 @@ defmodule Tesmoin.Stores.Store do
     timestamps(type: :utc_datetime)
   end
 
-  @doc "Changeset for creating or updating a store."
+  @doc "Changeset for creating a store."
   def changeset(store, attrs) do
     store
     |> cast(attrs, [:name, :slug, :status, :primary_url])
@@ -22,11 +22,25 @@ defmodule Tesmoin.Stores.Store do
       message: "can only contain lowercase letters, numbers, and hyphens"
     )
     |> validate_length(:slug, min: 2, max: 80)
-    |> validate_format(:primary_url, ~r/^https?:\/\/.+/,
-      message: "must be a valid URL starting with http:// or https://"
-    )
+    |> validate_url(:primary_url)
     |> unique_constraint(:slug)
     |> maybe_generate_widget_key()
+  end
+
+  @doc "Changeset for updating an existing store. Slug is immutable after creation."
+  def update_changeset(store, attrs) do
+    store
+    |> cast(attrs, [:name, :status, :primary_url])
+    |> validate_required([:name])
+    |> validate_length(:name, min: 2, max: 120)
+    |> validate_inclusion(:status, ~w(active archived), message: "must be active or archived")
+    |> validate_url(:primary_url)
+  end
+
+  defp validate_url(changeset, field) do
+    validate_format(changeset, field, ~r/^(https?:\/\/.+)?$/,
+      message: "must be a valid URL starting with http:// or https://"
+    )
   end
 
   defp maybe_generate_widget_key(changeset) do

@@ -35,8 +35,34 @@ defmodule Tesmoin.Stores do
     |> Repo.insert()
   end
 
-  @doc "Returns a changeset for tracking store form changes."
+  @doc "Updates a store."
+  def update_store(%Store{} = store, attrs) do
+    store
+    |> Store.update_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc "Archives a store (sets status to 'archived')."
+  def archive_store(%Store{} = store) do
+    store
+    |> Ecto.Changeset.change(status: "archived")
+    |> Repo.update()
+  end
+
+  @doc "Activates a store (sets status back to 'active')."
+  def activate_store(%Store{} = store) do
+    store
+    |> Ecto.Changeset.change(status: "active")
+    |> Repo.update()
+  end
+
+  @doc "Returns a changeset for tracking create-form changes."
   def change_store(%Store{} = store, attrs \\ %{}) do
     Store.changeset(store, attrs)
+  end
+
+  @doc "Returns a changeset for tracking edit-form changes."
+  def change_store_update(%Store{} = store, attrs \\ %{}) do
+    Store.update_changeset(store, attrs)
   end
 end

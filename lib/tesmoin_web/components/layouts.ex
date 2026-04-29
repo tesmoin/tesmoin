@@ -84,6 +84,70 @@ defmodule TesmoinWeb.Layouts do
     """
   end
 
+  @nav_items [
+    %{id: :dashboard, label: "Dashboard", icon: "hero-squares-2x2", path: "/"},
+    %{id: :stores, label: "Stores", icon: "hero-building-storefront", path: "/stores"},
+    %{id: :team, label: "Team", icon: "hero-users", path: "/team"},
+    %{id: :settings, label: "Settings", icon: "hero-cog-6-tooth", path: "/admin_users/settings"}
+  ]
+
+  @doc """
+  Renders the authenticated two-column shell: sticky sidebar on the left,
+  main content area on the right. Wraps `Layouts.app`.
+
+  ## Examples
+
+      <Layouts.shell flash={@flash} current_scope={@current_scope} current_tab={:dashboard}>
+        <h2>Dashboard</h2>
+      </Layouts.shell>
+
+  """
+  attr :flash, :map, required: true
+  attr :current_scope, :map, default: nil
+  attr :current_tab, :atom, required: true
+  slot :inner_block, required: true
+
+  def shell(assigns) do
+    assigns = assign(assigns, :nav_items, @nav_items)
+
+    ~H"""
+    <.app flash={@flash} current_scope={@current_scope}>
+      <div class="flex gap-6 items-start">
+        <aside class="w-52 shrink-0 sticky top-6">
+          <nav class="backoffice-shell p-2 flex flex-col gap-0.5">
+            <%= for item <- @nav_items do %>
+              <.link
+                navigate={item.path}
+                class={[
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+                  if(@current_tab == item.id,
+                    do: "bg-[--tes-primary] text-white shadow-sm",
+                    else:
+                      "text-slate-600 hover:bg-[color-mix(in_oklab,var(--tes-secondary)_70%,white)] hover:text-slate-800"
+                  )
+                ]}
+              >
+                <.icon
+                  name={item.icon}
+                  class={[
+                    "size-4 shrink-0",
+                    if(@current_tab == item.id, do: "text-white/90", else: "text-slate-400")
+                  ]}
+                />
+                {item.label}
+              </.link>
+            <% end %>
+          </nav>
+        </aside>
+
+        <div class="flex-1 min-w-0">
+          {render_slot(@inner_block)}
+        </div>
+      </div>
+    </.app>
+    """
+  end
+
   @doc """
   Shows the flash group with standard titles and content.
 

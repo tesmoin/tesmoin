@@ -2,12 +2,16 @@ defmodule Tesmoin.Accounts.AdminUser do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Tesmoin.Stores.StoreMembership
+
   schema "admin_users" do
     field :email, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
+
+    has_many :store_memberships, StoreMembership
 
     timestamps(type: :utc_datetime)
   end

@@ -67,6 +67,10 @@ defmodule TesmoinWeb.Router do
     live_session :require_authenticated_admin_user,
       on_mount: [{TesmoinWeb.AdminUserAuth, :require_authenticated}] do
       live "/", DashboardLive, :index
+      live "/stores", StoreLive.Index, :index
+      live "/stores/new", StoreLive.New, :new
+      live "/stores/:id/edit", StoreLive.Edit, :edit
+      live "/team", TeamLive, :index
       live "/admin_users/settings", AdminUserLive.Settings, :edit
       live "/admin_users/settings/confirm-email/:token", AdminUserLive.Settings, :confirm_email
     end
@@ -80,6 +84,7 @@ defmodule TesmoinWeb.Router do
       live "/setup", SetupLive, :new
       live "/admin_users/log-in", AdminUserLive.Login, :new
       live "/admin_users/log-in/:token", AdminUserLive.Confirmation, :new
+      live "/invitations/:token", InvitationLive, :new
     end
 
     post "/admin_users/log-in", AdminUserSessionController, :create

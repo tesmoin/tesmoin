@@ -30,6 +30,20 @@ config :tesmoin, TesmoinWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
 if config_env() == :prod do
+  # Parse TRUSTED_PROXIES env var into a list of IP tuples for RealIP plug.
+  # Set this to your reverse proxy IP(s), e.g. TRUSTED_PROXIES=127.0.0.1,10.0.0.1
+  trusted_proxies =
+    System.get_env("TRUSTED_PROXIES", "")
+    |> String.split(",", trim: true)
+    |> Enum.flat_map(fn ip ->
+      case :inet.parse_address(String.trim(ip) |> String.to_charlist()) do
+        {:ok, addr} -> [addr]
+        _ -> []
+      end
+    end)
+
+  config :tesmoin, trusted_proxies: trusted_proxies
+
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """

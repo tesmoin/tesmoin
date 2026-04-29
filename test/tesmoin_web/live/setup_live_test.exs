@@ -1,5 +1,5 @@
 defmodule TesmoinWeb.SetupLiveTest do
-  use TesmoinWeb.ConnCase, async: true
+  use TesmoinWeb.ConnCase, async: false
 
   import Phoenix.LiveViewTest
   import Tesmoin.AccountsFixtures
@@ -10,7 +10,6 @@ defmodule TesmoinWeb.SetupLiveTest do
   setup do
     Repo.delete_all(AdminUserToken)
     Repo.delete_all(AdminUser)
-
     :ok
   end
 

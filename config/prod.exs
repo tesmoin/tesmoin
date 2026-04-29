@@ -19,6 +19,9 @@ config :tesmoin, TesmoinWeb.Endpoint,
     ]
   ]
 
+# Require secure (HTTPS-only) cookies in production
+config :tesmoin, session_secure: true
+
 # Configure Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Req
 

@@ -94,10 +94,18 @@ defmodule TesmoinWeb.AdminUserLive.Login do
         if admin_user = Accounts.get_admin_user_by_email(email) do
           Logger.info("Magic link requested", email: email)
 
-          Accounts.deliver_login_instructions(
-            admin_user,
-            &url(~p"/admin_users/log-in/#{&1}")
-          )
+          job_attrs = %{admin_user_id: admin_user.id}
+
+          case enqueue_magic_link_email(job_attrs) do
+            :ok ->
+              :ok
+
+            {:error, reason} ->
+              Logger.error("Magic link enqueue failed",
+                email: email,
+                error: inspect(reason)
+              )
+          end
         end
 
         info =
@@ -112,5 +120,14 @@ defmodule TesmoinWeb.AdminUserLive.Login do
 
   defp local_mail_adapter? do
     Application.get_env(:tesmoin, Tesmoin.Mailer)[:adapter] == Swoosh.Adapters.Local
+  end
+
+  defp enqueue_magic_link_email(job_attrs) do
+    case job_attrs
+         |> Tesmoin.Workers.MagicLinkMailer.new()
+         |> Oban.insert() do
+      {:ok, _job} -> :ok
+      {:error, reason} -> {:error, reason}
+    end
   end
 end

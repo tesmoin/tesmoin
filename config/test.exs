@@ -9,6 +9,9 @@ config :tesmoin, bootstrap_on_start: false
 # Disable rate limiting in tests to avoid interference between test cases
 config :tesmoin, :rate_limiter_enabled, false
 
+# Run Oban jobs inline (synchronously) during tests so email delivery is testable
+config :tesmoin, Oban, testing: :inline
+
 # Configure your database
 #
 # The MIX_TEST_PARTITION environment variable can be used

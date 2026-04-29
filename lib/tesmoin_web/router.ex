@@ -5,11 +5,15 @@ defmodule TesmoinWeb.Router do
 
   pipeline :browser do
     plug :accepts, ["html"]
+    plug TesmoinWeb.Plugs.RealIP
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_root_layout, html: {TesmoinWeb.Layouts, :root}
     plug :protect_from_forgery
 
+    # Deliberate trade-off: LiveView currently depends on inline script behavior,
+    # so we keep 'unsafe-inline' for scripts. If the framework no longer requires
+    # it, tighten this CSP directive.
     plug :put_secure_browser_headers, %{
       "content-security-policy" =>
         "default-src 'self'; " <>

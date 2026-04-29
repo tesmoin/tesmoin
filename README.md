@@ -71,10 +71,10 @@ This pricing model keeps the node highly valuable on its own while making the sh
 
 ## Authentication and Activation Model
 
-The initial authentication workflow should be simple and self-hosting friendly.
+The authentication workflow is simple and self-hosting friendly.
 
-- During installation, the merchant defines an admin username and password.
-- In Docker-based deployments, those credentials can be provided through environment variables or a first-run setup flow.
+- Tesmoin is magic-link-only for admin authentication (no passwords).
+- On first boot, either use `/setup` or set `TESMOIN_ADMIN_EMAIL` to seed the first admin.
 - Authentication for the node admin panel remains local to the node.
 - If the merchant activates the paid plan, the Tesmoin website generates a license key.
 - The node stores and validates the license key locally and can later sync plan entitlements with the sentinel or licensing service.
@@ -191,7 +191,7 @@ Recommendation: support local development with standard mix tooling, but design 
 
 The first version of the node can be organized into these modules or bounded contexts:
 
-- Accounts: local admin authentication, password management, installation bootstrap
+- Accounts: local admin authentication, magic-link login, installation bootstrap
 - Billing or Licensing: local plan state and license key handling
 - Catalog: products, product metadata, imported references
 - Orders: transaction ingestion and verification references
@@ -244,7 +244,7 @@ Those are phase two multipliers, not phase one foundations.
 - Phoenix app with LiveView
 - PostgreSQL and Ecto setup
 - Docker-based local deployment
-- installation bootstrap for admin username and password
+- installation bootstrap for first admin email and magic-link login
 - basic authentication and settings pages
 
 ### Milestone 2: Transaction and Invitation Pipeline
@@ -354,4 +354,34 @@ SMTP_AUTH=always
 ```
 
 If `SMTP_HOST` is not set in production, the application will refuse to start with a descriptive error.
+
+## Production Deployment Checklist
+
+Use this list before exposing Tesmoin publicly.
+
+### Required
+
+- `PHX_HOST` set to your public host name
+- `SECRET_KEY_BASE` set to a strong secret
+- `DATABASE_URL` set and reachable
+- `SMTP_HOST` configured (plus SMTP credentials as needed)
+- `force_ssl` enabled (already configured in `config/prod.exs`)
+- HTTPS termination correctly configured in your proxy/load balancer
+
+### Strongly Recommended
+
+- `TRUSTED_PROXIES` set to the IP(s) of your reverse proxy so rate limits and audit logs use real client IPs
+- `TESMOIN_ADMIN_EMAIL` set for automated first boot in non-interactive deployments
+- Monitor Oban queue health and SMTP delivery failures
+
+### Auth/Cookie Security Notes
+
+- Session and remember-me cookies are `HttpOnly` and `Secure` in production (`session_secure: true` in `config/prod.exs`)
+- Magic-link email delivery is asynchronous via Oban
+- Magic-link token is generated at worker delivery time to avoid stale links from queue delay
+
+### Deliberate Trade-offs
+
+- CSP currently keeps `script-src 'unsafe-inline'` for Phoenix LiveView compatibility
+- Rate limiting uses Hammer ETS backend and is intended for self-hosted single-node deployments
 

@@ -63,6 +63,30 @@ defmodule Tesmoin.Accounts do
   end
 
   @doc """
+  Atomically registers the very first admin user.
+
+  Uses a PostgreSQL advisory lock so that concurrent setup requests are
+  serialised at the database level. If an admin already exists when the
+  lock is acquired, returns `{:error, :already_setup}` so the caller can
+  redirect to the login page instead of showing an error.
+  """
+  @setup_advisory_lock 7_891_011
+
+  def register_first_admin_user(attrs) do
+    Repo.transact(fn ->
+      Repo.query!("SELECT pg_advisory_xact_lock($1)", [@setup_advisory_lock])
+
+      if Repo.exists?(AdminUser) do
+        {:error, :already_setup}
+      else
+        %AdminUser{}
+        |> AdminUser.email_changeset(attrs)
+        |> Repo.insert()
+      end
+    end)
+  end
+
+  @doc """
   Returns true if at least one admin user exists in the database.
   Used to determine whether first-run setup is still needed.
   """
@@ -248,6 +272,19 @@ defmodule Tesmoin.Accounts do
     {encoded_token, admin_user_token} = AdminUserToken.build_email_token(admin_user, "login")
     Repo.insert!(admin_user_token)
     AdminUserNotifier.deliver_login_instructions(admin_user, magic_link_url_fun.(encoded_token))
+  end
+
+  @doc """
+  Generates and persists a login token, returning the magic-link URL.
+
+  Use this when you need to enqueue an async email job: call this function
+  synchronously to get the URL, then pass the URL to your mailer worker.
+  """
+  def generate_login_token(%AdminUser{} = admin_user, magic_link_url_fun)
+      when is_function(magic_link_url_fun, 1) do
+    {encoded_token, admin_user_token} = AdminUserToken.build_email_token(admin_user, "login")
+    Repo.insert!(admin_user_token)
+    magic_link_url_fun.(encoded_token)
   end
 
   @doc """

@@ -8,7 +8,9 @@ defmodule TesmoinWeb.Endpoint do
     store: :cookie,
     key: "_tesmoin_key",
     signing_salt: "ScM9+vck",
-    same_site: "Lax"
+    same_site: "Lax",
+    http_only: true,
+    secure: Application.compile_env(:tesmoin, :session_secure, false)
   ]
 
   socket "/live", Phoenix.LiveView.Socket,

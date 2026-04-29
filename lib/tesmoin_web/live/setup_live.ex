@@ -78,23 +78,41 @@ defmodule TesmoinWeb.SetupLive do
          put_flash(socket, :error, "Too many requests. Please wait a minute before trying again.")}
 
       :ok ->
-        case Accounts.register_admin_user(%{email: email}) do
+        case Accounts.register_first_admin_user(%{email: email}) do
           {:ok, admin_user} ->
             {:ok, _} = Accounts.confirm_admin_user(admin_user)
 
-            Accounts.deliver_login_instructions(
-              admin_user,
-              &url(~p"/admin_users/log-in/#{&1}")
-            )
+            job_attrs = %{admin_user_id: admin_user.id}
 
-            Logger.info("Setup: first admin account created", email: email)
+            case enqueue_magic_link_email(job_attrs) do
+              :ok ->
+                Logger.info("Setup: first admin account created", email: email)
 
-            info = "Account created! Check your email for your sign-in link."
+                info = "Account created! Check your email for your sign-in link."
 
-            {:noreply,
-             socket
-             |> put_flash(:info, info)
-             |> push_navigate(to: ~p"/admin_users/log-in")}
+                {:noreply,
+                 socket
+                 |> put_flash(:info, info)
+                 |> push_navigate(to: ~p"/admin_users/log-in")}
+
+              {:error, reason} ->
+                Logger.error("Setup: failed to enqueue magic link email",
+                  email: email,
+                  error: inspect(reason)
+                )
+
+                {:noreply,
+                 socket
+                 |> put_flash(
+                   :error,
+                   "Account created, but we could not queue your sign-in email. Please request a new sign-in link from the login page."
+                 )
+                 |> push_navigate(to: ~p"/admin_users/log-in")}
+            end
+
+          {:error, :already_setup} ->
+            Logger.warning("Setup: concurrent request detected, admin already exists")
+            {:noreply, push_navigate(socket, to: ~p"/admin_users/log-in")}
 
           {:error, changeset} ->
             {:noreply, assign(socket, form: to_form(changeset, action: :insert))}
@@ -104,5 +122,14 @@ defmodule TesmoinWeb.SetupLive do
 
   defp local_mail_adapter? do
     Application.get_env(:tesmoin, Tesmoin.Mailer)[:adapter] == Swoosh.Adapters.Local
+  end
+
+  defp enqueue_magic_link_email(job_attrs) do
+    case job_attrs
+         |> Tesmoin.Workers.MagicLinkMailer.new()
+         |> Oban.insert() do
+      {:ok, _job} -> :ok
+      {:error, reason} -> {:error, reason}
+    end
   end
 end

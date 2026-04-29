@@ -86,10 +86,6 @@ defmodule TesmoinWeb.AdminUserLive.Confirmation do
               </.button>
             <% end %>
           </.form>
-
-          <p :if={!@admin_user.confirmed_at} class="mt-4 rounded-xl border border-primary-200 bg-secondary-soft/70 p-3 text-sm text-neutral-ink">
-            Tip: If you prefer passwords, you can enable them in settings.
-          </p>
         </div>
       </section>
     </Layouts.app>

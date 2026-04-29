@@ -19,7 +19,9 @@ defmodule TesmoinWeb.AdminUserLive.Login do
           <p class="inline-flex items-center rounded-full bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary-700 shadow-sm">
             Admin access
           </p>
-          <h1 class="text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">Sign in to Tesmoin.</h1>
+          <h1 class="text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+            Sign in to Tesmoin.
+          </h1>
           <p class="max-w-lg text-sm leading-relaxed text-neutral-ink sm:text-base">
             We send a one-time magic link by email. No password reset flow, no credential reuse risks.
           </p>

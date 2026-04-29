@@ -25,7 +25,7 @@ defmodule TesmoinWeb.AdminUserSessionControllerTest do
       response = html_response(conn, 200)
       assert response =~ admin_user.email
       assert response =~ ~p"/admin_users/settings"
-      assert response =~ ~p"/admin_users/log-out"
+      refute response =~ ~p"/admin_users/log-out"
     end
 
     test "confirms unconfirmed admin_user", %{conn: conn, unconfirmed_admin_user: admin_user} do
@@ -49,7 +49,7 @@ defmodule TesmoinWeb.AdminUserSessionControllerTest do
       response = html_response(conn, 200)
       assert response =~ admin_user.email
       assert response =~ ~p"/admin_users/settings"
-      assert response =~ ~p"/admin_users/log-out"
+      refute response =~ ~p"/admin_users/log-out"
     end
 
     test "redirects to login page when magic link is invalid", %{conn: conn} do

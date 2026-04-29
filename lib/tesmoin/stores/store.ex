@@ -5,7 +5,7 @@ defmodule Tesmoin.Stores.Store do
   schema "stores" do
     field :name, :string
     field :slug, :string
-    field :status, :string, default: "active"
+    field :status, :string, default: "live"
     field :primary_url, :string
     field :public_widget_key, :string
 
@@ -17,6 +17,7 @@ defmodule Tesmoin.Stores.Store do
     store
     |> cast(attrs, [:name, :slug, :status, :primary_url])
     |> validate_required([:name, :slug])
+    |> validate_inclusion(:status, ~w(live test), message: "must be live or test")
     |> validate_length(:name, min: 2, max: 120)
     |> validate_format(:slug, ~r/^[a-z0-9-]+$/,
       message: "can only contain lowercase letters, numbers, and hyphens"
@@ -30,10 +31,9 @@ defmodule Tesmoin.Stores.Store do
   @doc "Changeset for updating an existing store. Slug is immutable after creation."
   def update_changeset(store, attrs) do
     store
-    |> cast(attrs, [:name, :status, :primary_url])
+    |> cast(attrs, [:name, :primary_url])
     |> validate_required([:name])
     |> validate_length(:name, min: 2, max: 120)
-    |> validate_inclusion(:status, ~w(active archived), message: "must be active or archived")
     |> validate_url(:primary_url)
   end
 

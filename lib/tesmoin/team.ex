@@ -26,6 +26,71 @@ defmodule Tesmoin.Team do
     |> Repo.preload(store_memberships: :store)
   end
 
+  @doc "Returns true when the given admin user has an admin role in at least one store."
+  def admin_member?(admin_user_id) when is_integer(admin_user_id) do
+    StoreMembership
+    |> where([m], m.admin_user_id == ^admin_user_id and m.role == "admin")
+    |> Repo.exists?()
+  end
+
+  @doc "Changes a member role across all of their store memberships."
+  def change_member_role(%AdminUser{} = actor, member_id, new_role)
+      when is_integer(member_id) and is_binary(new_role) do
+    cond do
+      not admin_member?(actor.id) ->
+        {:error, :forbidden}
+
+      new_role not in StoreMembership.valid_roles() ->
+        {:error, :invalid_role}
+
+      not Repo.exists?(from(u in AdminUser, where: u.id == ^member_id)) ->
+        {:error, :not_found}
+
+      member_is_admin?(member_id) ->
+        {:error, :admin_not_editable}
+
+      true ->
+        case Repo.update_all(
+               from(m in StoreMembership, where: m.admin_user_id == ^member_id),
+               set: [role: new_role]
+             ) do
+          {0, _} -> {:error, :no_memberships}
+          {_count, _} -> {:ok, :updated}
+        end
+    end
+  end
+
+  @doc "Deletes an admin user unless they are the last admin in the team."
+  def delete_admin_user(%AdminUser{} = admin_user) do
+    case Repo.transact(fn ->
+           if member_is_admin?(admin_user.id) and admin_member_count() == 1 do
+             {:error, :last_admin}
+           else
+             Repo.delete(admin_user)
+           end
+         end) do
+      {:ok, %AdminUser{} = deleted_user} -> {:ok, deleted_user}
+      {:ok, {:ok, %AdminUser{} = deleted_user}} -> {:ok, deleted_user}
+      {:error, :last_admin} -> {:error, :last_admin}
+      {:ok, {:error, :last_admin}} -> {:error, :last_admin}
+      {:ok, {:error, reason}} -> {:error, reason}
+    end
+  end
+
+  defp admin_member_count do
+    StoreMembership
+    |> where([m], m.role == "admin")
+    |> select([m], m.admin_user_id)
+    |> distinct(true)
+    |> Repo.aggregate(:count)
+  end
+
+  defp member_is_admin?(admin_user_id) do
+    StoreMembership
+    |> where([m], m.admin_user_id == ^admin_user_id and m.role == "admin")
+    |> Repo.exists?()
+  end
+
   # ---------------------------------------------------------------------------
   # Invitations
   # ---------------------------------------------------------------------------

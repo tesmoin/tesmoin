@@ -1,22 +1,23 @@
 defmodule TesmoinWeb.TeamLive do
   use TesmoinWeb, :live_view
 
-  alias Tesmoin.Stores
   alias Tesmoin.Team
   alias Tesmoin.Team.MemberInvitation
+  alias Tesmoin.Stores.StoreMembership
 
   def mount(_params, _session, socket) do
-    stores = Stores.list_stores()
     members = Team.list_members()
     pending = Team.list_pending_invitations()
     changeset = Team.change_invitation(%MemberInvitation{})
+    current_user = socket.assigns.current_scope.admin_user
 
     {:ok,
      assign(socket,
-       stores: stores,
        members: members,
        pending_invitations: pending,
        form: to_form(changeset),
+       roles: StoreMembership.valid_roles(),
+       current_user_is_admin: Team.admin_member?(current_user.id),
        show_invite_form: false
      )}
   end
@@ -61,26 +62,65 @@ defmodule TesmoinWeb.TeamLive do
     end
   end
 
+  def handle_event("change-role", %{"member_id" => member_id, "role" => role}, socket) do
+    current_user = socket.assigns.current_scope.admin_user
+
+    case Integer.parse(member_id) do
+      {parsed_member_id, ""} ->
+        case Team.change_member_role(current_user, parsed_member_id, role) do
+          {:ok, :updated} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, "Role updated.")
+             |> assign(:members, Team.list_members())}
+
+          {:error, :admin_not_editable} ->
+            {:noreply, put_flash(socket, :error, "Admin roles cannot be edited from Team.")}
+
+          {:error, :forbidden} ->
+            {:noreply, put_flash(socket, :error, "Only admins can change member roles.")}
+
+          {:error, :invalid_role} ->
+            {:noreply, put_flash(socket, :error, "Invalid role selected.")}
+
+          {:error, :no_memberships} ->
+            {:noreply, put_flash(socket, :error, "Member has no store memberships.")}
+
+          {:error, :not_found} ->
+            {:noreply, put_flash(socket, :error, "Member not found.")}
+        end
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "Invalid member.")}
+    end
+  end
+
   def render(assigns) do
     ~H"""
-    <Layouts.shell flash={@flash} current_scope={@current_scope} current_tab={:team}>
+    <Layouts.shell
+      flash={@flash}
+      current_scope={@current_scope}
+      current_tab={:team}
+      stores={@stores}
+      current_store={@current_store}
+    >
       <div class="space-y-6">
         <%!-- Header --%>
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-bold text-slate-800">Team</h1>
+
             <p class="mt-1 text-sm text-slate-500">Manage who has access to this node.</p>
           </div>
+
           <button
             :if={!@show_invite_form}
             phx-click="show-invite-form"
             class="backoffice-button-primary inline-flex items-center gap-2 px-4 py-2.5"
           >
-            <.icon name="hero-user-plus" class="size-4" />
-            Invite member
+            <.icon name="hero-user-plus" class="size-4" /> Invite member
           </button>
         </div>
-
         <%!-- Invite form --%>
         <div :if={@show_invite_form} class="backoffice-card p-6">
           <h2 class="text-base font-semibold text-slate-800 mb-4">Invite a new member</h2>
@@ -99,7 +139,6 @@ defmodule TesmoinWeb.TeamLive do
               placeholder="colleague@example.com"
               required
             />
-
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
               <select
@@ -107,7 +146,8 @@ defmodule TesmoinWeb.TeamLive do
                 id="member_invitation_role"
                 class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-[--tes-primary] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_oklab,var(--tes-primary)_30%,white)]"
               >
-                <option value="">Select a role…</option>
+                <option value="">Select a role...</option>
+
                 <option
                   :for={role <- MemberInvitation.valid_roles()}
                   value={role}
@@ -125,12 +165,15 @@ defmodule TesmoinWeb.TeamLive do
 
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">
-                Stores
-                <span class="text-slate-400 font-normal ml-1">— select one or more</span>
+                Stores <span class="text-slate-400 font-normal ml-1">- select one or more</span>
               </label>
               <%= if @stores == [] do %>
                 <p class="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  No stores yet. <.link navigate={~p"/stores/new"} class="font-semibold underline">Add a store</.link> first.
+                  No stores yet.
+                  <.link navigate={~p"/stores/new"} class="font-semibold underline">
+                    Add a store
+                  </.link>
+                  first.
                 </p>
               <% else %>
                 <div class="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -144,13 +187,13 @@ defmodule TesmoinWeb.TeamLive do
                         class="size-4 rounded border-slate-300 accent-[--tes-primary]"
                       />
                       <span class="text-sm text-slate-700 group-hover:text-slate-900">
-                        {store.name}
-                        <span class="text-slate-400 text-xs ml-1">/{store.slug}</span>
+                        {store.name} <span class="text-slate-400 text-xs ml-1">/{store.slug}</span>
                       </span>
                     </label>
                   <% end %>
                 </div>
               <% end %>
+
               <%= if @form[:store_ids].errors != [] do %>
                 <p class="mt-1 text-xs text-red-500">
                   {elem(hd(@form[:store_ids].errors), 0) |> Phoenix.Naming.humanize()}
@@ -159,7 +202,11 @@ defmodule TesmoinWeb.TeamLive do
             </div>
 
             <div class="flex gap-3 pt-1">
-              <button type="button" phx-click="hide-invite-form" class="backoffice-button-secondary px-4 py-2">
+              <button
+                type="button"
+                phx-click="hide-invite-form"
+                class="backoffice-button-secondary px-4 py-2"
+              >
                 Cancel
               </button>
               <button type="submit" class="backoffice-button-primary flex-1 py-2">
@@ -168,12 +215,12 @@ defmodule TesmoinWeb.TeamLive do
             </div>
           </.form>
         </div>
-
         <%!-- Current members --%>
         <div class="backoffice-card overflow-hidden">
           <div class="px-5 py-4 border-b border-slate-100">
             <h2 class="text-base font-semibold text-slate-800">Members</h2>
           </div>
+
           <ul class="divide-y divide-slate-50">
             <%= for member <- @members do %>
               <li class="flex items-center justify-between gap-4 px-5 py-3">
@@ -181,52 +228,86 @@ defmodule TesmoinWeb.TeamLive do
                   <div class="flex size-8 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--tes-primary)_15%,white)] text-xs font-bold text-[--tes-primary] uppercase">
                     {String.at(member.email, 0)}
                   </div>
+
                   <div class="min-w-0">
                     <p class="text-sm font-medium text-slate-800 truncate">{member.email}</p>
+
                     <%= if member.store_memberships == [] do %>
                       <p class="text-xs text-slate-400">No store memberships</p>
                     <% else %>
                       <p class="text-xs text-slate-400 truncate">
                         {member.store_memberships
-                         |> Enum.map(& &1.store.name)
-                         |> Enum.join(", ")}
+                        |> Enum.map(& &1.store.name)
+                        |> Enum.join(", ")}
                       </p>
                     <% end %>
                   </div>
                 </div>
-                <div class="flex flex-wrap gap-1.5 shrink-0">
-                  <%= for membership <- member.store_memberships do %>
-                    <span class={[
-                      "rounded-full px-2 py-0.5 text-xs font-semibold",
-                      role_badge_class(membership.role)
-                    ]}>
-                      {String.capitalize(membership.role)}
-                    </span>
+
+                <div class="flex flex-wrap gap-1.5 shrink-0 items-center">
+                  <%= if editable_member?(@current_user_is_admin, member) do %>
+                    <form
+                      phx-submit="change-role"
+                      id={"member-role-form-#{member.id}"}
+                      class="inline-flex items-center gap-2"
+                    >
+                      <input type="hidden" name="member_id" value={member.id} />
+                      <select
+                        name="role"
+                        class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700"
+                      >
+                        <option
+                          :for={role <- @roles}
+                          value={role}
+                          selected={role == member_role(member)}
+                        >
+                          {String.capitalize(role)}
+                        </option>
+                      </select>
+                      <button
+                        type="submit"
+                        class="rounded-lg bg-[--tes-primary] px-2 py-1 text-xs font-semibold text-white hover:opacity-90"
+                      >
+                        Update
+                      </button>
+                    </form>
+                  <% else %>
+                    <%= if role = member_role(member) do %>
+                      <span class={[
+                        "rounded-full px-2 py-0.5 text-xs font-semibold",
+                        role_badge_class(role)
+                      ]}>
+                        {String.capitalize(role)}
+                      </span>
+                    <% end %>
                   <% end %>
                 </div>
               </li>
             <% end %>
           </ul>
         </div>
-
         <%!-- Pending invitations --%>
         <div :if={@pending_invitations != []} class="backoffice-card overflow-hidden">
           <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
             <h2 class="text-base font-semibold text-slate-800">Pending invitations</h2>
+
             <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
               {length(@pending_invitations)}
             </span>
           </div>
+
           <ul class="divide-y divide-slate-50">
             <%= for inv <- @pending_invitations do %>
               <li class="flex items-center justify-between gap-4 px-5 py-3">
                 <div>
                   <p class="text-sm font-medium text-slate-700">{inv.email}</p>
+
                   <p class="text-xs text-slate-400">
-                    Invited by {inv.invited_by && inv.invited_by.email} ·
+                    Invited by {inv.invited_by && inv.invited_by.email} -
                     expires {Calendar.strftime(inv.expires_at, "%b %-d, %Y")}
                   </p>
                 </div>
+
                 <span class={[
                   "rounded-full px-2 py-0.5 text-xs font-semibold",
                   role_badge_class(inv.role)
@@ -241,6 +322,11 @@ defmodule TesmoinWeb.TeamLive do
     </Layouts.shell>
     """
   end
+
+  defp member_role(member), do: member.store_memberships |> List.first() |> then(&(&1 && &1.role))
+
+  defp editable_member?(false, _member), do: false
+  defp editable_member?(true, member), do: member_role(member) not in [nil, "admin"]
 
   defp role_badge_class("admin"), do: "bg-violet-100 text-violet-700"
   defp role_badge_class("editor"), do: "bg-blue-100 text-blue-700"

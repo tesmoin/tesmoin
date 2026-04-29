@@ -21,7 +21,7 @@ defmodule TesmoinWeb.StoreLive.New do
   end
 
   def handle_event("save", %{"store" => params}, socket) do
-    case Stores.create_store(params) do
+    case Stores.create_store(socket.assigns.current_scope, params) do
       {:ok, _store} ->
         {:noreply,
          socket
@@ -48,16 +48,23 @@ defmodule TesmoinWeb.StoreLive.New do
 
   def render(assigns) do
     ~H"""
-    <Layouts.shell flash={@flash} current_scope={@current_scope} current_tab={:stores}>
+    <Layouts.shell
+      flash={@flash}
+      current_scope={@current_scope}
+      current_tab={:stores}
+      stores={@stores}
+      current_store={@current_store}
+    >
       <div class="mx-auto max-w-xl">
         <div class="mb-6">
           <h1 class="text-2xl font-bold text-slate-800">Add a store</h1>
+          
           <p class="mt-1 text-sm text-slate-500">
             Connect an ecommerce storefront to this node. Each store has its own silo of reviews,
             orders, and analytics.
           </p>
         </div>
-
+        
         <div class="backoffice-card p-6 sm:p-8">
           <.form
             for={@form}
@@ -66,8 +73,13 @@ defmodule TesmoinWeb.StoreLive.New do
             phx-submit="save"
             class="space-y-5"
           >
-            <.input field={@form[:name]} type="text" label="Store name" placeholder="My Shop" required />
-
+            <.input
+              field={@form[:name]}
+              type="text"
+              label="Store name"
+              placeholder="My Shop"
+              required
+            />
             <div>
               <.input
                 field={@form[:slug]}
@@ -80,18 +92,23 @@ defmodule TesmoinWeb.StoreLive.New do
                 Lowercase letters, numbers, and hyphens only. Auto-filled from name.
               </p>
             </div>
-
+            
             <.input
               field={@form[:primary_url]}
               type="url"
               label="Store URL"
               placeholder="https://myshop.com"
             />
-
+            <.input
+              field={@form[:status]}
+              type="select"
+              label="Status"
+              options={[{"Live", "live"}, {"Test", "test"}]}
+              prompt="Choose store status"
+              required
+            />
             <div class="pt-2 flex gap-3">
-              <.link navigate={~p"/"} class="backoffice-button-secondary px-5 py-2.5">
-                Cancel
-              </.link>
+              <.link navigate={~p"/"} class="backoffice-button-secondary px-5 py-2.5">Cancel</.link>
               <button type="submit" class="backoffice-button-primary flex-1 py-2.5">
                 Create store
               </button>

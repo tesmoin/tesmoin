@@ -222,7 +222,7 @@ defmodule TesmoinWeb.AdminUserAuth do
     socket = mount_current_scope(socket, session)
 
     if socket.assigns.current_scope && socket.assigns.current_scope.admin_user do
-      {:cont, socket}
+      {:cont, mount_store_context(socket, session)}
     else
       socket =
         socket
@@ -256,6 +256,24 @@ defmodule TesmoinWeb.AdminUserAuth do
         end || {nil, nil}
 
       Scope.for_admin_user(admin_user)
+    end)
+  end
+
+  defp mount_store_context(socket, session) do
+    admin_user_id = socket.assigns.current_scope.admin_user.id
+
+    socket
+    |> Phoenix.Component.assign_new(:stores, fn ->
+      Tesmoin.Stores.list_stores_for_admin_user(admin_user_id)
+    end)
+    |> Phoenix.Component.assign_new(:current_store, fn %{stores: stores} ->
+      current_store_id = session["current_store_id"]
+
+      if current_store_id do
+        Enum.find(stores, List.first(stores), &(&1.id == current_store_id))
+      else
+        List.first(stores)
+      end
     end)
   end
 

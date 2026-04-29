@@ -35,6 +35,9 @@ defmodule TesmoinWeb.Layouts do
     default: false,
     doc: "hides the public log in CTA on auth-focused screens"
 
+  attr :stores, :list, default: []
+  attr :current_store, :map, default: nil
+
   slot :inner_block, required: true
 
   def app(assigns) do
@@ -55,20 +58,42 @@ defmodule TesmoinWeb.Layouts do
 
           <nav class="flex flex-wrap items-center gap-3">
             <%= if @current_scope do %>
+              <%!-- Store selector --%>
+              <form
+                id="store-switch-form"
+                action="/stores/switch"
+                method="post"
+                class="flex items-center"
+              >
+                <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+                <select
+                  id="store-switcher"
+                  name="store_id"
+                  phx-hook=".StoreSwitcher"
+                  disabled={@stores == []}
+                  class="rounded-lg border border-[color-mix(in_oklab,var(--tes-primary)_22%,white)] bg-white/80 px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[color-mix(in_oklab,var(--tes-primary)_30%,white)] cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <%= if @stores == [] do %>
+                    <option value="">No accessible stores</option>
+                  <% else %>
+                    <%= for store <- @stores do %>
+                      <option
+                        value={store.id}
+                        selected={@current_store && @current_store.id == store.id}
+                      >
+                        {store.name}
+                      </option>
+                    <% end %>
+                  <% end %>
+                </select>
+              </form>
+
               <span class="hidden rounded-full bg-white px-3 py-1 text-xs font-medium text-neutral-ink shadow-sm sm:inline">
                 {@current_scope.admin_user.email}
               </span>
-              <.link href={~p"/admin_users/settings"} class="backoffice-link">Settings</.link>
-              <.link
-                href={~p"/admin_users/log-out"}
-                method="delete"
-                class="backoffice-button-secondary"
-              >
-                Log out
-              </.link>
             <% else %>
               <%= unless @hide_public_auth_action do %>
-              <.link href={~p"/admin_users/log-in"} class="backoffice-button-primary">Log in</.link>
+                <.link href={~p"/admin_users/log-in"} class="backoffice-button-primary">Log in</.link>
               <% end %>
             <% end %>
           </nav>
@@ -81,6 +106,18 @@ defmodule TesmoinWeb.Layouts do
     </div>
 
     <.flash_group flash={@flash} />
+
+    <script :type={Phoenix.LiveView.ColocatedHook} name=".StoreSwitcher">
+      export default {
+        mounted() {
+          if (this.el.disabled) return
+
+          this.el.addEventListener("change", () => {
+            document.getElementById("store-switch-form").submit()
+          })
+        }
+      }
+    </script>
     """
   end
 
@@ -105,13 +142,20 @@ defmodule TesmoinWeb.Layouts do
   attr :flash, :map, required: true
   attr :current_scope, :map, default: nil
   attr :current_tab, :atom, required: true
+  attr :stores, :list, default: []
+  attr :current_store, :map, default: nil
   slot :inner_block, required: true
 
   def shell(assigns) do
     assigns = assign(assigns, :nav_items, @nav_items)
 
     ~H"""
-    <.app flash={@flash} current_scope={@current_scope}>
+    <.app
+      flash={@flash}
+      current_scope={@current_scope}
+      stores={@stores}
+      current_store={@current_store}
+    >
       <div class="flex gap-6 items-start">
         <aside class="w-52 shrink-0 sticky top-6">
           <nav class="backoffice-shell p-2 flex flex-col gap-0.5">
@@ -119,11 +163,11 @@ defmodule TesmoinWeb.Layouts do
               <.link
                 navigate={item.path}
                 class={[
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150",
                   if(@current_tab == item.id,
-                    do: "bg-[--tes-primary] text-white shadow-sm",
+                    do: "sidebar-nav-active",
                     else:
-                      "text-slate-600 hover:bg-[color-mix(in_oklab,var(--tes-secondary)_70%,white)] hover:text-slate-800"
+                      "font-medium text-slate-600 hover:bg-[color-mix(in_oklab,var(--tes-secondary)_70%,white)] hover:text-slate-800"
                   )
                 ]}
               >
@@ -131,7 +175,7 @@ defmodule TesmoinWeb.Layouts do
                   name={item.icon}
                   class={[
                     "size-4 shrink-0",
-                    if(@current_tab == item.id, do: "text-white/90", else: "text-slate-400")
+                    if(@current_tab == item.id, do: "text-white", else: "text-slate-400")
                   ]}
                 />
                 {item.label}

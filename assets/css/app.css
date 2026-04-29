@@ -65,8 +65,8 @@
   --color-base-200: oklch(96% 0.001 286.375);
   --color-base-300: oklch(92% 0.004 286.32);
   --color-base-content: oklch(21% 0.006 285.885);
-  --color-primary: oklch(70% 0.213 47.604);
-  --color-primary-content: oklch(98% 0.016 73.684);
+  --color-primary: oklch(48% 0.26 293);
+  --color-primary-content: oklch(98% 0.01 293);
   --color-secondary: oklch(55% 0.027 264.364);
   --color-secondary-content: oklch(98% 0.002 247.839);
   --color-accent: oklch(0% 0 0);
@@ -171,6 +171,13 @@ body {
   background: color-mix(in oklab, white 90%, var(--tes-secondary) 10%);
   border-radius: 1rem;
   box-shadow: 0 20px 46px rgba(65, 42, 107, 0.09);
+}
+
+.sidebar-nav-active {
+  background-color: var(--tes-primary);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(124, 58, 237, 0.35);
 }
 
 .backoffice-link {

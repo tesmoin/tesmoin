@@ -4,30 +4,81 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
   on_mount {TesmoinWeb.AdminUserAuth, :require_sudo_mode}
 
   alias Tesmoin.Accounts
+  alias Tesmoin.Team
 
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="text-center">
-        <.header>
-          Account Settings
-          <:subtitle>Manage your account email address</:subtitle>
-        </.header>
-      </div>
+    <Layouts.shell
+      flash={@flash}
+      current_scope={@current_scope}
+      current_tab={:settings}
+      stores={@stores}
+      current_store={@current_store}
+    >
+      <div class="space-y-6">
+        <%!-- Change email --%>
+        <div class="backoffice-card p-6">
+          <h2 class="text-base font-semibold text-slate-800 mb-1">Email address</h2>
+          <p class="text-sm text-slate-500 mb-5">
+            Current: <span class="font-medium text-slate-700">{@current_email}</span>
+          </p>
+          <.form
+            for={@email_form}
+            id="email_form"
+            phx-submit="update_email"
+            phx-change="validate_email"
+            class="flex flex-col gap-4 max-w-md"
+          >
+            <.input
+              field={@email_form[:email]}
+              type="email"
+              label="New email"
+              autocomplete="username"
+              spellcheck="false"
+              required
+            />
+            <div>
+              <.button variant="primary" phx-disable-with="Sending link...">
+                Change email
+              </.button>
+            </div>
+          </.form>
+        </div>
 
-      <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
-        <.input
-          field={@email_form[:email]}
-          type="email"
-          label="Email"
-          autocomplete="username"
-          spellcheck="false"
-          required
-        />
-        <.button variant="primary" phx-disable-with="Changing...">Change Email</.button>
-      </.form>
-    </Layouts.app>
+        <%!-- Log out --%>
+        <div class="backoffice-card p-6">
+          <h2 class="text-base font-semibold text-slate-800 mb-1">Session</h2>
+          <p class="text-sm text-slate-500 mb-5">Sign out of your account on this device.</p>
+          <.link
+            href={~p"/admin_users/log-out"}
+            method="delete"
+            class="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 ring-1 ring-inset ring-red-200 hover:bg-red-100 transition-colors"
+          >
+            <.icon name="hero-arrow-right-on-rectangle" class="size-4" /> Log out
+          </.link>
+        </div>
+
+        <%!-- Delete account --%>
+        <div class="backoffice-card p-6 border border-red-100">
+          <h2 class="text-base font-semibold text-red-700 mb-1">Delete account</h2>
+          <p class="text-sm text-slate-500 mb-5">
+            This permanently removes your account and revokes all your store access.
+          </p>
+
+          <form id="delete-account-form" phx-submit="delete-account">
+            <button
+              type="submit"
+              phx-disable-with="Deleting..."
+              data-confirm="Delete your account permanently? This cannot be undone."
+              class="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+            >
+              <.icon name="hero-trash" class="size-4" /> Delete my account
+            </button>
+          </form>
+        </div>
+      </div>
+    </Layouts.shell>
     """
   end
 
@@ -88,6 +139,26 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
 
       changeset ->
         {:noreply, assign(socket, :email_form, to_form(changeset, action: :insert))}
+    end
+  end
+
+  def handle_event("delete-account", _params, socket) do
+    admin_user = socket.assigns.current_scope.admin_user
+
+    case Team.delete_admin_user(admin_user) do
+      {:ok, _deleted_user} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Your account has been deleted.")
+         |> redirect(to: ~p"/admin_users/log-in")}
+
+      {:error, :last_admin} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           "You are the only admin. Promote a non-admin to admin before deleting your account."
+         )}
     end
   end
 end

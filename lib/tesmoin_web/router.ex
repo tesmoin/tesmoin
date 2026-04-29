@@ -35,8 +35,6 @@ defmodule TesmoinWeb.Router do
     plug :accepts, ["json"]
   end
 
-
-
   # Other scopes may use custom stacks.
   # scope "/api", TesmoinWeb do
   #   pipe_through :api
@@ -63,6 +61,8 @@ defmodule TesmoinWeb.Router do
 
   scope "/", TesmoinWeb do
     pipe_through [:browser, :require_authenticated_admin_user]
+
+    post "/stores/switch", StoreSessionController, :create
 
     live_session :require_authenticated_admin_user,
       on_mount: [{TesmoinWeb.AdminUserAuth, :require_authenticated}] do

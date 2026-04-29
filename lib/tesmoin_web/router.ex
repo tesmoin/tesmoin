@@ -9,7 +9,20 @@ defmodule TesmoinWeb.Router do
     plug :fetch_live_flash
     plug :put_root_layout, html: {TesmoinWeb.Layouts, :root}
     plug :protect_from_forgery
-    plug :put_secure_browser_headers
+
+    plug :put_secure_browser_headers, %{
+      "content-security-policy" =>
+        "default-src 'self'; " <>
+          "script-src 'self' 'unsafe-inline'; " <>
+          "style-src 'self' 'unsafe-inline'; " <>
+          "img-src 'self' data:; " <>
+          "connect-src 'self' wss: ws:; " <>
+          "font-src 'self'; " <>
+          "object-src 'none'; " <>
+          "base-uri 'self'; " <>
+          "frame-ancestors 'none'"
+    }
+
     plug :fetch_current_scope_for_admin_user
     plug :redirect_to_setup_if_needed
   end

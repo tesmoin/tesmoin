@@ -1,7 +1,10 @@
 defmodule TesmoinWeb.SetupLive do
   use TesmoinWeb, :live_view
 
+  require Logger
+
   alias Tesmoin.Accounts
+  alias Tesmoin.RateLimiter
 
   @impl true
   def render(assigns) do
@@ -16,18 +19,18 @@ defmodule TesmoinWeb.SetupLive do
             </:subtitle>
           </.header>
         </div>
-        
+
         <div :if={local_mail_adapter?()} class="alert alert-info">
           <.icon name="hero-information-circle" class="size-6 shrink-0" />
           <div>
             <p>You are running the local mail adapter.</p>
-            
+
             <p>
               To see sent emails, visit <.link href="/dev/mailbox" class="underline">the mailbox page</.link>.
             </p>
           </div>
         </div>
-        
+
         <.form for={@form} id="setup_form" phx-submit="submit">
           <.input
             field={@form[:email]}
@@ -52,31 +55,50 @@ defmodule TesmoinWeb.SetupLive do
     if Accounts.admin_user_exists?() do
       {:ok, push_navigate(socket, to: ~p"/admin_users/log-in")}
     else
+      client_ip =
+        if connected?(socket) do
+          case get_connect_info(socket, :peer_data) do
+            %{address: ip} -> ip
+            _ -> nil
+          end
+        end
+
       form = to_form(%{"email" => ""}, as: "admin_user")
-      {:ok, assign(socket, form: form)}
+      {:ok, assign(socket, form: form, client_ip: client_ip)}
     end
   end
 
   @impl true
   def handle_event("submit", %{"admin_user" => %{"email" => email}}, socket) do
-    case Accounts.register_admin_user(%{email: email}) do
-      {:ok, admin_user} ->
-        {:ok, _} = Accounts.confirm_admin_user(admin_user)
-
-        Accounts.deliver_login_instructions(
-          admin_user,
-          &url(~p"/admin_users/log-in/#{&1}")
-        )
-
-        info = "Account created! Check your email for your sign-in link."
+    case RateLimiter.check_magic_link_request(socket.assigns.client_ip) do
+      :rate_limited ->
+        Logger.warning("Setup rate limited", client_ip: inspect(socket.assigns.client_ip))
 
         {:noreply,
-         socket
-         |> put_flash(:info, info)
-         |> push_navigate(to: ~p"/admin_users/log-in")}
+         put_flash(socket, :error, "Too many requests. Please wait a minute before trying again.")}
 
-      {:error, changeset} ->
-        {:noreply, assign(socket, form: to_form(changeset, action: :insert))}
+      :ok ->
+        case Accounts.register_admin_user(%{email: email}) do
+          {:ok, admin_user} ->
+            {:ok, _} = Accounts.confirm_admin_user(admin_user)
+
+            Accounts.deliver_login_instructions(
+              admin_user,
+              &url(~p"/admin_users/log-in/#{&1}")
+            )
+
+            Logger.info("Setup: first admin account created", email: email)
+
+            info = "Account created! Check your email for your sign-in link."
+
+            {:noreply,
+             socket
+             |> put_flash(:info, info)
+             |> push_navigate(to: ~p"/admin_users/log-in")}
+
+          {:error, changeset} ->
+            {:noreply, assign(socket, form: to_form(changeset, action: :insert))}
+        end
     end
   end
 

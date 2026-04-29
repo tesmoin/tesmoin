@@ -74,10 +74,21 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Hammer — rate limiting (ETS backend, 4-hour window, clean up every 10 min)
+config :hammer,
+  backend: {Hammer.Backend.ETS, [expiry_ms: 60_000 * 60 * 4, cleanup_interval_ms: 60_000 * 10]}
+
 # Oban — background job processing
 config :tesmoin, Oban,
   engine: Oban.Engines.Basic,
   queues: [default: 10, invitations: 5, analytics: 3],
+  plugins: [
+    {Oban.Plugins.Cron,
+     crontab: [
+       # Prune expired auth tokens every hour
+       {"0 * * * *", Tesmoin.Workers.TokenPruner}
+     ]}
+  ],
   repo: Tesmoin.Repo
 
 # Import environment specific config. This must remain at the bottom

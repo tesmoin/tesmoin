@@ -6,6 +6,9 @@ config :pbkdf2_elixir, :rounds, 1
 # Disable the bootstrap admin seeder in tests — fixtures handle test data
 config :tesmoin, bootstrap_on_start: false
 
+# Disable rate limiting in tests to avoid interference between test cases
+config :tesmoin, :rate_limiter_enabled, false
+
 # Configure your database
 #
 # The MIX_TEST_PARTITION environment variable can be used

@@ -1,7 +1,10 @@
 defmodule TesmoinWeb.AdminUserLive.Login do
   use TesmoinWeb, :live_view
 
+  require Logger
+
   alias Tesmoin.Accounts
+  alias Tesmoin.RateLimiter
 
   @impl true
   def render(assigns) do
@@ -63,25 +66,48 @@ defmodule TesmoinWeb.AdminUserLive.Login do
 
     form = to_form(%{"email" => email}, as: "admin_user")
 
-    {:ok, assign(socket, form: form)}
+    client_ip =
+      if connected?(socket) do
+        case get_connect_info(socket, :peer_data) do
+          %{address: ip} -> ip
+          _ -> nil
+        end
+      end
+
+    {:ok, assign(socket, form: form, client_ip: client_ip)}
   end
 
   @impl true
   def handle_event("submit_magic", %{"admin_user" => %{"email" => email}}, socket) do
-    if admin_user = Accounts.get_admin_user_by_email(email) do
-      Accounts.deliver_login_instructions(
-        admin_user,
-        &url(~p"/admin_users/log-in/#{&1}")
-      )
+    case RateLimiter.check_magic_link_request(socket.assigns.client_ip) do
+      :rate_limited ->
+        Logger.warning("Magic link rate limited",
+          client_ip: inspect(socket.assigns.client_ip)
+        )
+
+        {:noreply,
+         socket
+         |> put_flash(:error, "Too many requests. Please wait a minute before trying again.")
+         |> push_navigate(to: ~p"/admin_users/log-in")}
+
+      :ok ->
+        if admin_user = Accounts.get_admin_user_by_email(email) do
+          Logger.info("Magic link requested", email: email)
+
+          Accounts.deliver_login_instructions(
+            admin_user,
+            &url(~p"/admin_users/log-in/#{&1}")
+          )
+        end
+
+        info =
+          "If your email is in our system, you will receive instructions for logging in shortly."
+
+        {:noreply,
+         socket
+         |> put_flash(:info, info)
+         |> push_navigate(to: ~p"/admin_users/log-in")}
     end
-
-    info =
-      "If your email is in our system, you will receive instructions for logging in shortly."
-
-    {:noreply,
-     socket
-     |> put_flash(:info, info)
-     |> push_navigate(to: ~p"/admin_users/log-in")}
   end
 
   defp local_mail_adapter? do

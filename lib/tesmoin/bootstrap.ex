@@ -13,6 +13,8 @@ defmodule Tesmoin.Bootstrap do
   require Logger
 
   alias Tesmoin.Accounts
+  alias Tesmoin.Accounts.AdminUser
+  alias Tesmoin.Repo
 
   @doc """
   Seeds the admin user from environment variables if no admin user exists yet.
@@ -23,23 +25,61 @@ defmodule Tesmoin.Bootstrap do
     password = System.get_env("TESMOIN_ADMIN_PASSWORD")
 
     cond do
-      is_nil(email) or is_nil(password) ->
+      is_nil(email) ->
         Logger.warning(
-          "Bootstrap: TESMOIN_ADMIN_EMAIL or TESMOIN_ADMIN_PASSWORD not set. " <>
+          "Bootstrap: TESMOIN_ADMIN_EMAIL is not set. " <>
             "No admin user will be seeded automatically."
         )
 
-      Accounts.get_admin_user_by_email(email) ->
-        :ok
+      admin_user = Accounts.get_admin_user_by_email(email) ->
+        maybe_set_bootstrap_password(admin_user, password)
+        maybe_confirm_admin_user(admin_user)
 
       true ->
-        case Accounts.register_admin_user(%{email: email, password: password}) do
-          {:ok, _user} ->
-            Logger.info("Bootstrap: Admin user #{email} created successfully.")
+        with {:ok, admin_user} <- Accounts.register_admin_user(%{email: email}) do
+          maybe_set_bootstrap_password(admin_user, password)
+          maybe_confirm_admin_user(admin_user)
 
+          Logger.info("Bootstrap: Admin user #{email} created successfully.")
+        else
           {:error, changeset} ->
             Logger.error("Bootstrap: Failed to create admin user: #{inspect(changeset.errors)}")
         end
     end
   end
+
+  defp maybe_set_bootstrap_password(_admin_user, nil) do
+    Logger.warning(
+      "Bootstrap: TESMOIN_ADMIN_PASSWORD is not set. " <>
+        "Admin user can still log in with a magic link."
+    )
+  end
+
+  defp maybe_set_bootstrap_password(%{hashed_password: nil} = admin_user, password) do
+    case Accounts.update_admin_user_password(admin_user, %{password: password}) do
+      {:ok, _result} ->
+        Logger.info(
+          "Bootstrap: Admin user #{admin_user.email} password was initialized from env."
+        )
+
+      {:error, changeset} ->
+        Logger.error(
+          "Bootstrap: Failed to initialize admin password: #{inspect(changeset.errors)}"
+        )
+    end
+  end
+
+  defp maybe_set_bootstrap_password(_admin_user, _password), do: :ok
+
+  defp maybe_confirm_admin_user(%AdminUser{confirmed_at: nil} = admin_user) do
+    case admin_user |> AdminUser.confirm_changeset() |> Repo.update() do
+      {:ok, _updated_admin_user} ->
+        Logger.info("Bootstrap: Admin user #{admin_user.email} was confirmed.")
+
+      {:error, changeset} ->
+        Logger.error("Bootstrap: Failed to confirm admin user: #{inspect(changeset.errors)}")
+    end
+  end
+
+  defp maybe_confirm_admin_user(_admin_user), do: :ok
 end

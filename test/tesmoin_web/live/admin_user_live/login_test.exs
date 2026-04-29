@@ -9,7 +9,7 @@ defmodule TesmoinWeb.AdminUserLive.LoginTest do
       {:ok, _lv, html} = live(conn, ~p"/admin_users/log-in")
 
       assert html =~ "Log in"
-      assert html =~ "Log in with email"
+      assert html =~ "Send magic link"
     end
   end
 
@@ -70,12 +70,11 @@ defmodule TesmoinWeb.AdminUserLive.LoginTest do
     test "shows login page with email filled in", %{conn: conn, admin_user: admin_user} do
       {:ok, _lv, html} = live(conn, ~p"/admin_users/log-in")
 
-      assert html =~ "You need to reauthenticate"
+      assert html =~ "Reauthenticate to continue"
       refute html =~ "Register"
-      assert html =~ "Log in with email"
-
-      assert html =~
-               ~s(<input type="email" name="admin_user[email]" id="login_form_magic_email" value="#{admin_user.email}")
+      assert html =~ "Send magic link"
+      assert html =~ ~s(name="admin_user[email]")
+      assert html =~ ~s(value="#{admin_user.email}")
     end
   end
 end

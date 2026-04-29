@@ -103,3 +103,166 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+:root {
+  --tes-primary: #7C3AED;
+  --tes-secondary: #F4F0FF;
+  --tes-tertiary: #A15100;
+  --tes-neutral: #7A7581;
+}
+
+body {
+  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+}
+
+.bg-secondary-soft {
+  background-color: var(--tes-secondary);
+}
+
+.neutral-ink {
+  color: var(--tes-neutral);
+}
+
+.primary-100 {
+  border-color: color-mix(in oklab, var(--tes-primary) 18%, white);
+}
+
+.primary-200 {
+  border-color: color-mix(in oklab, var(--tes-primary) 30%, white);
+}
+
+.primary-300 {
+  border-color: color-mix(in oklab, var(--tes-primary) 46%, white);
+}
+
+.primary-700 {
+  color: color-mix(in oklab, var(--tes-primary) 86%, black);
+}
+
+.tertiary-300 {
+  border-color: color-mix(in oklab, var(--tes-tertiary) 32%, white);
+}
+
+.tertiary-600 {
+  color: color-mix(in oklab, var(--tes-tertiary) 80%, black);
+}
+
+.tertiary-700 {
+  color: color-mix(in oklab, var(--tes-tertiary) 86%, black);
+}
+
+.backoffice-mesh {
+  background:
+    radial-gradient(1200px 380px at 10% -10%, color-mix(in oklab, var(--tes-primary) 24%, white) 0%, transparent 65%),
+    radial-gradient(900px 420px at 100% 0%, color-mix(in oklab, var(--tes-tertiary) 17%, white) 0%, transparent 62%),
+    linear-gradient(180deg, #ffffff 0%, var(--tes-secondary) 55%, #ffffff 100%);
+}
+
+.backoffice-shell {
+  border: 1px solid color-mix(in oklab, var(--tes-primary) 18%, white);
+  background: color-mix(in oklab, var(--tes-secondary) 64%, white);
+  border-radius: 1rem;
+  box-shadow: 0 18px 50px rgba(124, 58, 237, 0.12);
+  backdrop-filter: blur(6px);
+  animation: fadeSlideIn 420ms ease-out;
+}
+
+.backoffice-card {
+  border: 1px solid color-mix(in oklab, var(--tes-primary) 16%, white);
+  background: color-mix(in oklab, white 90%, var(--tes-secondary) 10%);
+  border-radius: 1rem;
+  box-shadow: 0 20px 46px rgba(65, 42, 107, 0.09);
+  animation: fadeSlideIn 500ms ease-out;
+}
+
+.backoffice-link {
+  color: color-mix(in oklab, var(--tes-primary) 82%, black);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.75rem;
+  transition: background-color 180ms ease, transform 180ms ease;
+}
+
+.backoffice-link:hover {
+  background-color: color-mix(in oklab, var(--tes-secondary) 70%, white);
+  transform: translateY(-1px);
+}
+
+.backoffice-button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  border-radius: 0.8rem;
+  border: 1px solid transparent;
+  background: linear-gradient(145deg, color-mix(in oklab, var(--tes-primary) 92%, white), color-mix(in oklab, var(--tes-primary) 76%, black));
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.01em;
+  padding: 0.55rem 1rem;
+  transition: transform 160ms ease, box-shadow 180ms ease, opacity 180ms ease;
+  box-shadow: 0 12px 24px rgba(124, 58, 237, 0.35);
+}
+
+.backoffice-button-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(124, 58, 237, 0.4);
+}
+
+.backoffice-button-primary:active {
+  transform: translateY(0);
+  opacity: 0.95;
+}
+
+.backoffice-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  border-radius: 0.8rem;
+  border: 1px solid color-mix(in oklab, var(--tes-tertiary) 28%, white);
+  background: color-mix(in oklab, var(--tes-tertiary) 9%, white);
+  color: color-mix(in oklab, var(--tes-tertiary) 85%, black);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.01em;
+  padding: 0.55rem 1rem;
+  transition: transform 160ms ease, background-color 180ms ease;
+}
+
+.backoffice-button-secondary:hover {
+  background: color-mix(in oklab, var(--tes-tertiary) 15%, white);
+  transform: translateY(-1px);
+}
+
+.backoffice-input {
+  width: 100%;
+  border: 1px solid color-mix(in oklab, var(--tes-primary) 25%, white);
+  border-radius: 0.8rem;
+  background: #fff;
+  color: #0f172a;
+  min-height: 2.85rem;
+  padding: 0.65rem 0.85rem;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.backoffice-input:focus {
+  outline: none;
+  border-color: color-mix(in oklab, var(--tes-primary) 62%, black);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--tes-primary) 22%, white);
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -3,6 +3,8 @@ defmodule TesmoinWeb.PageControllerTest do
 
   test "GET /", %{conn: conn} do
     conn = get(conn, ~p"/")
-    assert html_response(conn, 200) =~ "Peace of mind from prototype to production"
+
+    assert html_response(conn, 200) =~
+             "Trusted reviews and Q&amp;A, operated entirely on your infrastructure"
   end
 end

@@ -31,42 +31,54 @@ defmodule TesmoinWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
+  attr :hide_public_auth_action, :boolean,
+    default: false,
+    doc: "hides the public log in CTA on auth-focused screens"
+
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
-        </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
-          </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
-          </li>
-        </ul>
-      </div>
-    </header>
+    <div class="relative min-h-screen overflow-hidden">
+      <div class="absolute inset-0 -z-10 backoffice-mesh"></div>
+      <div class="mx-auto max-w-7xl px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+        <header class="backoffice-shell mb-8 flex flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-5">
+          <a href={~p"/"} class="flex items-center gap-3">
+            <img src={~p"/images/tesmoin-logo.png"} alt="Tesmoin" class="h-10 w-auto" />
+            <div>
+              <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-primary-700">
+                Tesmoin
+              </p>
+              <p class="text-sm font-semibold text-slate-700">Control Suite</p>
+            </div>
+          </a>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
-        {render_slot(@inner_block)}
+          <nav class="flex flex-wrap items-center gap-3">
+            <%= if @current_scope do %>
+              <span class="hidden rounded-full bg-white px-3 py-1 text-xs font-medium text-neutral-ink shadow-sm sm:inline">
+                {@current_scope.admin_user.email}
+              </span>
+              <.link href={~p"/admin_users/settings"} class="backoffice-link">Settings</.link>
+              <.link
+                href={~p"/admin_users/log-out"}
+                method="delete"
+                class="backoffice-button-secondary"
+              >
+                Log out
+              </.link>
+            <% else %>
+              <%= unless @hide_public_auth_action do %>
+              <.link href={~p"/admin_users/log-in"} class="backoffice-button-primary">Log in</.link>
+              <% end %>
+            <% end %>
+          </nav>
+        </header>
+
+        <main>
+          {render_slot(@inner_block)}
+        </main>
       </div>
-    </main>
+    </div>
 
     <.flash_group flash={@flash} />
     """

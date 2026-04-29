@@ -35,11 +35,7 @@ defmodule TesmoinWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", TesmoinWeb do
-    pipe_through :browser
 
-    get "/", PageController, :home
-  end
 
   # Other scopes may use custom stacks.
   # scope "/api", TesmoinWeb do
@@ -70,6 +66,7 @@ defmodule TesmoinWeb.Router do
 
     live_session :require_authenticated_admin_user,
       on_mount: [{TesmoinWeb.AdminUserAuth, :require_authenticated}] do
+      live "/", DashboardLive, :index
       live "/admin_users/settings", AdminUserLive.Settings, :edit
       live "/admin_users/settings/confirm-email/:token", AdminUserLive.Settings, :confirm_email
     end

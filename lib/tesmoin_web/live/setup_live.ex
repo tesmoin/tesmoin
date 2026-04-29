@@ -9,43 +9,85 @@ defmodule TesmoinWeb.SetupLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-sm space-y-4">
-        <div class="text-center">
-          <.header>
-            Welcome to Tesmoin
-            <:subtitle>
-              Enter your email address to create your admin account and receive a sign-in link.
-            </:subtitle>
-          </.header>
-        </div>
-
-        <div :if={local_mail_adapter?()} class="alert alert-info">
-          <.icon name="hero-information-circle" class="size-6 shrink-0" />
-          <div>
-            <p>You are running the local mail adapter.</p>
-
-            <p>
-              To see sent emails, visit <.link href="/dev/mailbox" class="underline">the mailbox page</.link>.
-            </p>
+    <Layouts.app
+      flash={@flash}
+      current_scope={@current_scope}
+      hide_public_auth_action={true}
+    >
+      <section class="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <div class="space-y-5">
+          <p class="inline-flex items-center rounded-full bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary-700 shadow-sm">
+            Initial setup
+          </p>
+          <h1 class="text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+            Create your first admin and launch your Tesmoin workspace.
+          </h1>
+          <p class="max-w-lg text-sm leading-relaxed text-neutral-ink sm:text-base">
+            This email receives a one-time sign-in link. Tesmoin uses passwordless authentication for
+            a simpler and safer admin workflow.
+          </p>
+          <div class="rounded-2xl border border-primary-200/70 bg-white/75 p-4 shadow-sm backdrop-blur-sm">
+            <p class="text-sm font-medium text-slate-800">What happens next</p>
+            <ul class="mt-3 space-y-2 text-sm text-neutral-ink">
+              <li class="flex items-start gap-2">
+                <.icon name="hero-check-circle" class="mt-0.5 size-4 text-primary-700" />
+                <span>Account is created and confirmed immediately.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <.icon name="hero-check-circle" class="mt-0.5 size-4 text-primary-700" />
+                <span>A secure magic link is delivered by email.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <.icon name="hero-check-circle" class="mt-0.5 size-4 text-primary-700" />
+                <span>You can start configuring reviews and Q&A flows right away.</span>
+              </li>
+            </ul>
           </div>
         </div>
 
-        <.form for={@form} id="setup_form" phx-submit="submit">
-          <.input
-            field={@form[:email]}
-            type="email"
-            label="Admin Email"
-            autocomplete="username"
-            spellcheck="false"
-            required
-            phx-mounted={JS.focus()}
-          />
-          <.button class="btn btn-primary w-full">
-            Create admin account <span aria-hidden="true">→</span>
-          </.button>
-        </.form>
-      </div>
+        <div class="backoffice-card p-6 sm:p-8">
+          <h2 class="text-xl font-semibold text-slate-900">Welcome to Tesmoin</h2>
+          <p class="mt-2 text-sm text-neutral-ink">
+            Enter the admin email to receive your first sign-in link.
+          </p>
+
+          <div
+            :if={local_mail_adapter?()}
+            class="mt-5 rounded-xl border border-primary-200 bg-secondary-soft/90 p-3 text-sm text-slate-700"
+          >
+            <div class="flex items-start gap-2">
+              <.icon name="hero-information-circle" class="mt-0.5 size-5 shrink-0 text-primary-700" />
+              <p>
+                Local mail adapter is active. Open
+                <.link
+                  href="/dev/mailbox"
+                  class="font-semibold text-primary-700 underline decoration-primary-300 underline-offset-4"
+                >
+                  /dev/mailbox
+                </.link>
+                to inspect outgoing emails.
+              </p>
+            </div>
+          </div>
+
+          <.form for={@form} id="setup_form" phx-submit="submit" class="mt-5 space-y-4">
+            <.input
+              field={@form[:email]}
+              type="email"
+              label="Admin Email"
+              autocomplete="username"
+              spellcheck="false"
+              class="backoffice-input"
+              error_class="border-red-300 ring-red-200"
+              required
+              phx-mounted={JS.focus()}
+            />
+            <.button class="backoffice-button-primary mt-2 w-full">
+              Create admin account <span aria-hidden="true">→</span>
+            </.button>
+          </.form>
+        </div>
+      </section>
     </Layouts.app>
     """
   end

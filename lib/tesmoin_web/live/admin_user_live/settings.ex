@@ -12,7 +12,7 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
       <div class="text-center">
         <.header>
           Account Settings
-          <:subtitle>Manage your account email address and password settings</:subtitle>
+          <:subtitle>Manage your account email address</:subtitle>
         </.header>
       </div>
 
@@ -26,44 +26,6 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
           required
         />
         <.button variant="primary" phx-disable-with="Changing...">Change Email</.button>
-      </.form>
-
-      <div class="divider" />
-
-      <.form
-        for={@password_form}
-        id="password_form"
-        action={~p"/admin_users/update-password"}
-        method="post"
-        phx-change="validate_password"
-        phx-submit="update_password"
-        phx-trigger-action={@trigger_submit}
-      >
-        <input
-          name={@password_form[:email].name}
-          type="hidden"
-          id="hidden_admin_user_email"
-          spellcheck="false"
-          value={@current_email}
-        />
-        <.input
-          field={@password_form[:password]}
-          type="password"
-          label="New password"
-          autocomplete="new-password"
-          spellcheck="false"
-          required
-        />
-        <.input
-          field={@password_form[:password_confirmation]}
-          type="password"
-          label="Confirm new password"
-          autocomplete="new-password"
-          spellcheck="false"
-        />
-        <.button variant="primary" phx-disable-with="Saving...">
-          Save Password
-        </.button>
       </.form>
     </Layouts.app>
     """
@@ -87,15 +49,10 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
     admin_user = socket.assigns.current_scope.admin_user
     email_changeset = Accounts.change_admin_user_email(admin_user, %{}, validate_unique: false)
 
-    password_changeset =
-      Accounts.change_admin_user_password(admin_user, %{}, hash_password: false)
-
     socket =
       socket
       |> assign(:current_email, admin_user.email)
       |> assign(:email_form, to_form(email_changeset))
-      |> assign(:password_form, to_form(password_changeset))
-      |> assign(:trigger_submit, false)
 
     {:ok, socket}
   end
@@ -131,32 +88,6 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
 
       changeset ->
         {:noreply, assign(socket, :email_form, to_form(changeset, action: :insert))}
-    end
-  end
-
-  def handle_event("validate_password", params, socket) do
-    %{"admin_user" => admin_user_params} = params
-
-    password_form =
-      socket.assigns.current_scope.admin_user
-      |> Accounts.change_admin_user_password(admin_user_params, hash_password: false)
-      |> Map.put(:action, :validate)
-      |> to_form()
-
-    {:noreply, assign(socket, password_form: password_form)}
-  end
-
-  def handle_event("update_password", params, socket) do
-    %{"admin_user" => admin_user_params} = params
-    admin_user = socket.assigns.current_scope.admin_user
-    true = Accounts.sudo_mode?(admin_user)
-
-    case Accounts.change_admin_user_password(admin_user, admin_user_params) do
-      %{valid?: true} = changeset ->
-        {:noreply, assign(socket, trigger_submit: true, password_form: to_form(changeset))}
-
-      changeset ->
-        {:noreply, assign(socket, password_form: to_form(changeset, action: :insert))}
     end
   end
 end

@@ -27,24 +27,6 @@ defmodule Tesmoin.Accounts do
   end
 
   @doc """
-  Gets a admin_user by email and password.
-
-  ## Examples
-
-      iex> get_admin_user_by_email_and_password("foo@example.com", "correct_password")
-      %AdminUser{}
-
-      iex> get_admin_user_by_email_and_password("foo@example.com", "invalid_password")
-      nil
-
-  """
-  def get_admin_user_by_email_and_password(email, password)
-      when is_binary(email) and is_binary(password) do
-    admin_user = Repo.get_by(AdminUser, email: email)
-    if AdminUser.valid_password?(admin_user, password), do: admin_user
-  end
-
-  @doc """
   Gets a single admin_user.
 
   Raises `Ecto.NoResultsError` if the AdminUser does not exist.
@@ -78,6 +60,24 @@ defmodule Tesmoin.Accounts do
     %AdminUser{}
     |> AdminUser.email_changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  Returns true if at least one admin user exists in the database.
+  Used to determine whether first-run setup is still needed.
+  """
+  def admin_user_exists? do
+    Repo.exists?(AdminUser)
+  end
+
+  @doc """
+  Confirms the admin user directly, bypassing the token flow.
+  Used by the bootstrap and setup wizard to mark the owner account as trusted.
+  """
+  def confirm_admin_user(admin_user) do
+    admin_user
+    |> AdminUser.confirm_changeset()
+    |> Repo.update()
   end
 
   ## Settings
@@ -133,41 +133,6 @@ defmodule Tesmoin.Accounts do
         _ -> {:error, :transaction_aborted}
       end
     end)
-  end
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for changing the admin_user password.
-
-  See `Tesmoin.Accounts.AdminUser.password_changeset/3` for a list of supported options.
-
-  ## Examples
-
-      iex> change_admin_user_password(admin_user)
-      %Ecto.Changeset{data: %AdminUser{}}
-
-  """
-  def change_admin_user_password(admin_user, attrs \\ %{}, opts \\ []) do
-    AdminUser.password_changeset(admin_user, attrs, opts)
-  end
-
-  @doc """
-  Updates the admin_user password.
-
-  Returns a tuple with the updated admin_user, as well as a list of expired tokens.
-
-  ## Examples
-
-      iex> update_admin_user_password(admin_user, %{password: ...})
-      {:ok, {%AdminUser{}, [...]}}
-
-      iex> update_admin_user_password(admin_user, %{password: "too short"})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def update_admin_user_password(admin_user, attrs) do
-    admin_user
-    |> AdminUser.password_changeset(attrs)
-    |> update_admin_user_and_delete_all_tokens()
   end
 
   ## Session

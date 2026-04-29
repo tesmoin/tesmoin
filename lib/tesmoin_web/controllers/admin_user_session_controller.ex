@@ -29,36 +29,10 @@ defmodule TesmoinWeb.AdminUserSessionController do
     end
   end
 
-  # email + password login
-  defp create(conn, %{"admin_user" => admin_user_params}, info) do
-    %{"email" => email, "password" => password} = admin_user_params
-
-    if admin_user = Accounts.get_admin_user_by_email_and_password(email, password) do
-      conn
-      |> put_flash(:info, info)
-      |> AdminUserAuth.log_in_admin_user(admin_user, admin_user_params)
-    else
-      # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
-      conn
-      |> put_flash(:error, "Invalid email or password")
-      |> put_flash(:email, String.slice(email, 0, 160))
-      |> redirect(to: ~p"/admin_users/log-in")
-    end
-  end
-
-  def update_password(conn, %{"admin_user" => admin_user_params} = params) do
-    admin_user = conn.assigns.current_scope.admin_user
-    true = Accounts.sudo_mode?(admin_user)
-
-    {:ok, {_admin_user, expired_tokens}} =
-      Accounts.update_admin_user_password(admin_user, admin_user_params)
-
-    # disconnect all existing LiveViews with old sessions
-    AdminUserAuth.disconnect_sessions(expired_tokens)
-
+  defp create(conn, _params, _info) do
     conn
-    |> put_session(:admin_user_return_to, ~p"/admin_users/settings")
-    |> create(params, "Password updated successfully!")
+    |> put_flash(:error, "The link is invalid or it has expired.")
+    |> redirect(to: ~p"/admin_users/log-in")
   end
 
   def delete(conn, _params) do

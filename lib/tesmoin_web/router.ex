@@ -11,6 +11,7 @@ defmodule TesmoinWeb.Router do
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug :fetch_current_scope_for_admin_user
+    plug :redirect_to_setup_if_needed
   end
 
   pipeline :api do
@@ -55,8 +56,6 @@ defmodule TesmoinWeb.Router do
       live "/admin_users/settings", AdminUserLive.Settings, :edit
       live "/admin_users/settings/confirm-email/:token", AdminUserLive.Settings, :confirm_email
     end
-
-    post "/admin_users/update-password", AdminUserSessionController, :update_password
   end
 
   scope "/", TesmoinWeb do
@@ -64,6 +63,7 @@ defmodule TesmoinWeb.Router do
 
     live_session :current_admin_user,
       on_mount: [{TesmoinWeb.AdminUserAuth, :mount_current_scope}] do
+      live "/setup", SetupLive, :new
       live "/admin_users/log-in", AdminUserLive.Login, :new
       live "/admin_users/log-in/:token", AdminUserLive.Confirmation, :new
     end

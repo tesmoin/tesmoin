@@ -287,4 +287,24 @@ defmodule TesmoinWeb.AdminUserAuth do
   end
 
   defp maybe_store_return_to(conn), do: conn
+
+  @doc """
+  Redirects to /setup when no admin user exists yet.
+  Exempt paths: /setup, /admin_users/log-in*, /admin_users/log-out, /dev/mailbox*, /dev/dashboard*.
+  """
+  def redirect_to_setup_if_needed(conn, _opts) do
+    if setup_path_exempt?(conn.request_path) or Accounts.admin_user_exists?() do
+      conn
+    else
+      conn |> redirect(to: ~p"/setup") |> halt()
+    end
+  end
+
+  defp setup_path_exempt?(path) do
+    path == "/setup" or
+      String.starts_with?(path, "/admin_users/log-in") or
+      path == "/admin_users/log-out" or
+      String.starts_with?(path, "/dev/mailbox") or
+      String.starts_with?(path, "/dev/dashboard")
+  end
 end

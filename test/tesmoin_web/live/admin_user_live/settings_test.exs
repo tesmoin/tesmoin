@@ -13,7 +13,7 @@ defmodule TesmoinWeb.AdminUserLive.SettingsTest do
         |> live(~p"/admin_users/settings")
 
       assert html =~ "Change Email"
-      assert html =~ "Save Password"
+      refute html =~ "Save Password"
     end
 
     test "redirects if admin_user is not logged in", %{conn: conn} do
@@ -86,78 +86,6 @@ defmodule TesmoinWeb.AdminUserLive.SettingsTest do
 
       assert result =~ "Change Email"
       assert result =~ "did not change"
-    end
-  end
-
-  describe "update password form" do
-    setup %{conn: conn} do
-      admin_user = admin_user_fixture()
-      %{conn: log_in_admin_user(conn, admin_user), admin_user: admin_user}
-    end
-
-    test "updates the admin_user password", %{conn: conn, admin_user: admin_user} do
-      new_password = valid_admin_user_password()
-
-      {:ok, lv, _html} = live(conn, ~p"/admin_users/settings")
-
-      form =
-        form(lv, "#password_form", %{
-          "admin_user" => %{
-            "email" => admin_user.email,
-            "password" => new_password,
-            "password_confirmation" => new_password
-          }
-        })
-
-      render_submit(form)
-
-      new_password_conn = follow_trigger_action(form, conn)
-
-      assert redirected_to(new_password_conn) == ~p"/admin_users/settings"
-
-      assert get_session(new_password_conn, :admin_user_token) !=
-               get_session(conn, :admin_user_token)
-
-      assert Phoenix.Flash.get(new_password_conn.assigns.flash, :info) =~
-               "Password updated successfully"
-
-      assert Accounts.get_admin_user_by_email_and_password(admin_user.email, new_password)
-    end
-
-    test "renders errors with invalid data (phx-change)", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, ~p"/admin_users/settings")
-
-      result =
-        lv
-        |> element("#password_form")
-        |> render_change(%{
-          "admin_user" => %{
-            "password" => "too short",
-            "password_confirmation" => "does not match"
-          }
-        })
-
-      assert result =~ "Save Password"
-      assert result =~ "should be at least 12 character(s)"
-      assert result =~ "does not match password"
-    end
-
-    test "renders errors with invalid data (phx-submit)", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, ~p"/admin_users/settings")
-
-      result =
-        lv
-        |> form("#password_form", %{
-          "admin_user" => %{
-            "password" => "too short",
-            "password_confirmation" => "does not match"
-          }
-        })
-        |> render_submit()
-
-      assert result =~ "Save Password"
-      assert result =~ "should be at least 12 character(s)"
-      assert result =~ "does not match password"
     end
   end
 

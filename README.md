@@ -296,3 +296,62 @@ This is enough to build a serious standalone node without overcommitting to phas
 Start by initializing the node as a Phoenix application with PostgreSQL, LiveView, and Oban, and define the core bounded contexts around orders, invitations, reviews, questions, trust signals, analytics, and licensing.
 
 If that first slice is done well, the sentinel can later become an additive integration layer rather than a structural dependency.
+
+## Authentication and Mailer Setup
+
+### Authentication
+
+Tesmoin uses **magic-link-only authentication**. There are no passwords. Admins log in by requesting a one-time sign-in link sent to their email address.
+
+#### First-run setup
+
+On a fresh installation with no admin account, every route redirects to `/setup`. Fill in an email address and a magic link is sent to that address. Click it to log in and start using the node.
+
+#### Bootstrap via environment variable
+
+For automated or Docker-based deployments, set `TESMOIN_ADMIN_EMAIL` to pre-create a confirmed admin account on boot. If no account with that email exists yet, it is created and confirmed automatically. A magic link can then be requested from the login page.
+
+```env
+TESMOIN_ADMIN_EMAIL=admin@yourdomain.com
+```
+
+This variable is optional. If not set, the `/setup` wizard handles first-run account creation.
+
+### Mailer
+
+#### Development
+
+In development, emails are not delivered externally. They are stored in memory and can be inspected at:
+
+```
+http://localhost:4000/dev/mailbox
+```
+
+#### Production
+
+Production requires a real SMTP server. Set at minimum `SMTP_HOST`. All other variables are optional and have defaults.
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `SMTP_HOST` | Yes | — | SMTP relay hostname |
+| `SMTP_PORT` | No | `587` | SMTP port (587 = STARTTLS, 465 = SSL, 25 = plain) |
+| `SMTP_USER` | No | — | SMTP username or API token |
+| `SMTP_PASS` | No | — | SMTP password or API secret |
+| `SMTP_FROM` | No | `SMTP_USER` | From address for outgoing emails |
+| `SMTP_TLS` | No | `if_available` | TLS mode: `always`, `never`, or `if_available` |
+| `SMTP_AUTH` | No | `if_available` | Auth mode: `always`, `never`, or `if_available` |
+
+Any standard SMTP provider works: Postmark, Mailgun, Resend, AWS SES, or your own mail server. Example for Postmark:
+
+```env
+SMTP_HOST=smtp.postmarkapp.com
+SMTP_PORT=587
+SMTP_USER=your-postmark-api-token
+SMTP_PASS=your-postmark-api-token
+SMTP_FROM=noreply@yourdomain.com
+SMTP_TLS=always
+SMTP_AUTH=always
+```
+
+If `SMTP_HOST` is not set in production, the application will refuse to start with a descriptive error.
+

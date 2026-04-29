@@ -17,27 +17,6 @@ defmodule Tesmoin.AccountsTest do
     end
   end
 
-  describe "get_admin_user_by_email_and_password/2" do
-    test "does not return the admin_user if the email does not exist" do
-      refute Accounts.get_admin_user_by_email_and_password("unknown@example.com", "hello world!")
-    end
-
-    test "does not return the admin_user if the password is not valid" do
-      admin_user = admin_user_fixture() |> set_password()
-      refute Accounts.get_admin_user_by_email_and_password(admin_user.email, "invalid")
-    end
-
-    test "returns the admin_user if the email and password are valid" do
-      %{id: id} = admin_user = admin_user_fixture() |> set_password()
-
-      assert %AdminUser{id: ^id} =
-               Accounts.get_admin_user_by_email_and_password(
-                 admin_user.email,
-                 valid_admin_user_password()
-               )
-    end
-  end
-
   describe "get_admin_user!/1" do
     test "raises if id is invalid" do
       assert_raise Ecto.NoResultsError, fn ->
@@ -195,78 +174,6 @@ defmodule Tesmoin.AccountsTest do
 
       assert Repo.get!(AdminUser, admin_user.id).email == admin_user.email
       assert Repo.get_by(AdminUserToken, admin_user_id: admin_user.id)
-    end
-  end
-
-  describe "change_admin_user_password/3" do
-    test "returns a admin_user changeset" do
-      assert %Ecto.Changeset{} = changeset = Accounts.change_admin_user_password(%AdminUser{})
-      assert changeset.required == [:password]
-    end
-
-    test "allows fields to be set" do
-      changeset =
-        Accounts.change_admin_user_password(
-          %AdminUser{},
-          %{
-            "password" => "new valid password"
-          },
-          hash_password: false
-        )
-
-      assert changeset.valid?
-      assert get_change(changeset, :password) == "new valid password"
-      assert is_nil(get_change(changeset, :hashed_password))
-    end
-  end
-
-  describe "update_admin_user_password/2" do
-    setup do
-      %{admin_user: admin_user_fixture()}
-    end
-
-    test "validates password", %{admin_user: admin_user} do
-      {:error, changeset} =
-        Accounts.update_admin_user_password(admin_user, %{
-          password: "not valid",
-          password_confirmation: "another"
-        })
-
-      assert %{
-               password: ["should be at least 12 character(s)"],
-               password_confirmation: ["does not match password"]
-             } = errors_on(changeset)
-    end
-
-    test "validates maximum values for password for security", %{admin_user: admin_user} do
-      too_long = String.duplicate("db", 100)
-
-      {:error, changeset} =
-        Accounts.update_admin_user_password(admin_user, %{password: too_long})
-
-      assert "should be at most 72 character(s)" in errors_on(changeset).password
-    end
-
-    test "updates the password", %{admin_user: admin_user} do
-      {:ok, {admin_user, expired_tokens}} =
-        Accounts.update_admin_user_password(admin_user, %{
-          password: "new valid password"
-        })
-
-      assert expired_tokens == []
-      assert is_nil(admin_user.password)
-      assert Accounts.get_admin_user_by_email_and_password(admin_user.email, "new valid password")
-    end
-
-    test "deletes all tokens for the given admin_user", %{admin_user: admin_user} do
-      _ = Accounts.generate_admin_user_session_token(admin_user)
-
-      {:ok, {_, _}} =
-        Accounts.update_admin_user_password(admin_user, %{
-          password: "new valid password"
-        })
-
-      refute Repo.get_by(AdminUserToken, admin_user_id: admin_user.id)
     end
   end
 

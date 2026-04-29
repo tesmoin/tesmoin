@@ -43,39 +43,17 @@ defmodule TesmoinWeb.AdminUserLive.LoginTest do
   end
 
   describe "admin_user login - password" do
-    test "redirects if admin_user logs in with valid credentials", %{conn: conn} do
-      admin_user = admin_user_fixture() |> set_password()
+    test "password login is rejected - magic link only", %{conn: conn} do
+      admin_user = admin_user_fixture()
 
-      {:ok, lv, _html} = live(conn, ~p"/admin_users/log-in")
+      conn =
+        post(conn, ~p"/admin_users/log-in", %{
+          "admin_user" => %{"email" => admin_user.email, "password" => "somepassword123!"}
+        })
 
-      form =
-        form(lv, "#login_form_password",
-          admin_user: %{
-            email: admin_user.email,
-            password: valid_admin_user_password(),
-            remember_me: true
-          }
-        )
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "The link is invalid or it has expired."
 
-      conn = submit_form(form, conn)
-
-      assert redirected_to(conn) == ~p"/"
-    end
-
-    test "redirects to login page with a flash error if credentials are invalid", %{
-      conn: conn
-    } do
-      {:ok, lv, _html} = live(conn, ~p"/admin_users/log-in")
-
-      form =
-        form(lv, "#login_form_password",
-          admin_user: %{email: "test@email.com", password: "123456"}
-        )
-
-      render_submit(form, %{user: %{remember_me: true}})
-
-      conn = follow_trigger_action(form, conn)
-      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
       assert redirected_to(conn) == ~p"/admin_users/log-in"
     end
   end

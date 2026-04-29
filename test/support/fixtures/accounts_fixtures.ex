@@ -50,13 +50,6 @@ defmodule Tesmoin.AccountsFixtures do
     Scope.for_admin_user(admin_user)
   end
 
-  def set_password(admin_user) do
-    {:ok, {admin_user, _expired_tokens}} =
-      Accounts.update_admin_user_password(admin_user, %{password: valid_admin_user_password()})
-
-    admin_user
-  end
-
   def extract_admin_user_token(fun) do
     {:ok, captured_email} = fun.(&"[TOKEN]#{&1}[TOKEN]")
     [_, token | _] = String.split(captured_email.text_body, "[TOKEN]")

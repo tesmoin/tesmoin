@@ -106,21 +106,50 @@ if config_env() == :prod do
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
 
-  # ## Configuring the mailer
+  # ## Mailer configuration
   #
-  # In production you need to configure the mailer to use a different adapter.
-  # Here is an example configuration for Mailgun:
+  # Tesmoin uses SMTP by default for maximum self-hosting compatibility.
+  # Set SMTP_HOST (required) plus any optional vars below to enable email delivery.
+  # Without it, magic links will not be delivered and no one can log in.
   #
-  #     config :tesmoin, Tesmoin.Mailer,
-  #       adapter: Swoosh.Adapters.Mailgun,
-  #       api_key: System.get_env("MAILGUN_API_KEY"),
-  #       domain: System.get_env("MAILGUN_DOMAIN")
+  # Required:
+  #   SMTP_HOST     — e.g. "smtp.postmarkapp.com" or "mail.yourdomain.com"
   #
-  # Most non-SMTP adapters require an API client. Swoosh supports Req, Hackney,
-  # and Finch out-of-the-box. This configuration is typically done at
-  # compile-time in your config/prod.exs:
-  #
-  #     config :swoosh, :api_client, Swoosh.ApiClient.Req
-  #
-  # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+  # Optional (with defaults):
+  #   SMTP_PORT     — default 587 (STARTTLS). Use 465 for SSL, 25 for plain.
+  #   SMTP_USER     — SMTP username / API token
+  #   SMTP_PASS     — SMTP password / API secret
+  #   SMTP_FROM     — From address, e.g. "noreply@yourdomain.com" (default: SMTP_USER)
+  #   SMTP_TLS      — "always" | "never" | "if_available" (default: "if_available")
+  #   SMTP_AUTH     — "always" | "never" | "if_available" (default: "if_available")
+
+  if smtp_host = System.get_env("SMTP_HOST") do
+    smtp_port = String.to_integer(System.get_env("SMTP_PORT", "587"))
+    smtp_user = System.get_env("SMTP_USER")
+    smtp_pass = System.get_env("SMTP_PASS")
+    smtp_from = System.get_env("SMTP_FROM", smtp_user)
+    smtp_tls = System.get_env("SMTP_TLS", "if_available") |> String.to_existing_atom()
+    smtp_auth = System.get_env("SMTP_AUTH", "if_available") |> String.to_existing_atom()
+
+    config :tesmoin, Tesmoin.Mailer,
+      adapter: Swoosh.Adapters.SMTP,
+      relay: smtp_host,
+      port: smtp_port,
+      username: smtp_user,
+      password: smtp_pass,
+      from_name: "Tesmoin",
+      from_email: smtp_from,
+      tls: smtp_tls,
+      auth: smtp_auth
+  else
+    raise """
+    SMTP_HOST environment variable is missing in production.
+    Tesmoin requires email to deliver magic login links.
+    Set at minimum:
+      SMTP_HOST=smtp.yourdomain.com
+      SMTP_USER=your_smtp_username
+      SMTP_PASS=your_smtp_password
+      SMTP_FROM=noreply@yourdomain.com
+    """
+  end
 end

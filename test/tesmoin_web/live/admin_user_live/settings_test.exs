@@ -105,6 +105,12 @@ defmodule TesmoinWeb.AdminUserLive.SettingsTest do
       |> element("#delete-account-form")
       |> render_submit()
 
+      assert render(lv) =~ "Delete your account?"
+
+      lv
+      |> element("#delete-account-confirm-form")
+      |> render_submit()
+
       assert_redirect(lv, ~p"/admin_users/log-in")
       refute Accounts.get_admin_user_by_email(admin_user.email)
     end
@@ -122,6 +128,13 @@ defmodule TesmoinWeb.AdminUserLive.SettingsTest do
       result =
         lv
         |> element("#delete-account-form")
+        |> render_submit()
+
+      assert result =~ "Delete your account?"
+
+      result =
+        lv
+        |> element("#delete-account-confirm-form")
         |> render_submit()
 
       assert result =~ "You are the only admin"
@@ -142,6 +155,12 @@ defmodule TesmoinWeb.AdminUserLive.SettingsTest do
 
       lv
       |> element("#delete-account-form")
+      |> render_submit()
+
+      assert render(lv) =~ "Delete your account?"
+
+      lv
+      |> element("#delete-account-confirm-form")
       |> render_submit()
 
       assert_redirect(lv, ~p"/admin_users/log-in")

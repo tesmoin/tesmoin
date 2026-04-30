@@ -249,26 +249,32 @@ defmodule TesmoinWeb.TeamLive do
                     <form
                       phx-submit="change-role"
                       id={"member-role-form-#{member.id}"}
-                      class="inline-flex items-center gap-2"
+                      class="inline-flex items-center gap-2 rounded-full border border-[color-mix(in_oklab,var(--tes-primary)_22%,white)] bg-white/90 px-1.5 py-1 shadow-sm"
                     >
                       <input type="hidden" name="member_id" value={member.id} />
-                      <select
-                        name="role"
-                        class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700"
-                      >
-                        <option
-                          :for={role <- @roles}
-                          value={role}
-                          selected={role == member_role(member)}
+                      <div class="relative">
+                        <select
+                          name="role"
+                          class="appearance-none rounded-full bg-[color-mix(in_oklab,var(--tes-secondary)_65%,white)] pl-3 pr-8 py-1.5 text-xs font-semibold text-slate-700 border border-transparent focus:border-[--tes-primary] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_oklab,var(--tes-primary)_28%,white)]"
                         >
-                          {String.capitalize(role)}
-                        </option>
-                      </select>
+                          <option
+                            :for={role <- @roles}
+                            value={role}
+                            selected={role == member_role(member)}
+                          >
+                            {String.capitalize(role)}
+                          </option>
+                        </select>
+                        <.icon
+                          name="hero-chevron-down"
+                          class="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-slate-500"
+                        />
+                      </div>
                       <button
                         type="submit"
-                        class="rounded-lg bg-[--tes-primary] px-2 py-1 text-xs font-semibold text-white hover:opacity-90"
+                        class="inline-flex items-center gap-1 rounded-full bg-[--tes-primary] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-110"
                       >
-                        Update
+                        <.icon name="hero-check" class="size-3.5" /> Apply
                       </button>
                     </form>
                   <% else %>

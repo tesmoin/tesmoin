@@ -57,6 +57,24 @@ defmodule TesmoinWeb.AdminUserLive.ConfirmationTest do
       assert html =~ "Log in"
     end
 
+    test "renders re-authenticate button for reauth magic link", %{
+      conn: conn,
+      confirmed_admin_user: admin_user
+    } do
+      conn = log_in_admin_user(conn, admin_user)
+
+      token =
+        extract_admin_user_token(fn url ->
+          Accounts.deliver_login_instructions(admin_user, fn token ->
+            url.(token) <> "?reauth=true"
+          end)
+        end)
+
+      {:ok, _lv, html} = live(conn, ~p"/admin_users/log-in/#{token}?reauth=true")
+      refute html =~ "Confirm my account"
+      assert html =~ "Re-authenticate"
+    end
+
     test "confirms the given token once", %{conn: conn, unconfirmed_admin_user: admin_user} do
       token =
         extract_admin_user_token(fn url ->

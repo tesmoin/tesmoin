@@ -32,6 +32,9 @@ defmodule TesmoinWeb.AdminUserLive.Login do
                 <p class="mt-1 text-sm text-neutral-ink">
                   We sent a sign-in link to <span class="font-medium text-slate-800">{@login_email}</span>.
                 </p>
+                <p :if={@reauth_mode} class="mt-2 text-sm text-slate-600">
+                  Use the link to re-authenticate and continue to your settings.
+                </p>
               </div>
 
               <div
@@ -54,6 +57,13 @@ defmodule TesmoinWeb.AdminUserLive.Login do
               </div>
             </div>
           <% else %>
+            <div
+              :if={@reauth_mode}
+              class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            >
+              You must re-authenticate to access this page. Sensitive settings require confirmation every 10 minutes.
+            </div>
+
             <p
               :if={@login_email}
               class="mb-4 rounded-xl border border-primary-200 bg-secondary-soft/70 px-3 py-2 text-sm text-slate-700"
@@ -93,6 +103,7 @@ defmodule TesmoinWeb.AdminUserLive.Login do
   @impl true
   def mount(params, _session, socket) do
     login_email = params["email"]
+    reauth_mode = params["reauth"] == "true"
     form = to_form(%{"email" => login_email || ""}, as: "admin_user")
 
     client_ip =
@@ -108,7 +119,8 @@ defmodule TesmoinWeb.AdminUserLive.Login do
        form: form,
        client_ip: client_ip,
        login_email: login_email,
-       magic_link_sent: false
+       magic_link_sent: false,
+       reauth_mode: reauth_mode
      )}
   end
 
@@ -129,7 +141,7 @@ defmodule TesmoinWeb.AdminUserLive.Login do
         if admin_user = Accounts.get_admin_user_by_email(email) do
           Logger.info("Magic link requested", email: email)
 
-          job_attrs = %{admin_user_id: admin_user.id}
+          job_attrs = %{admin_user_id: admin_user.id, reauth: socket.assigns.reauth_mode}
 
           case enqueue_magic_link_email(job_attrs) do
             :ok ->

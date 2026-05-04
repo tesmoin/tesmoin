@@ -256,7 +256,6 @@ defmodule TesmoinWeb.AdminUserAuth do
     else
       socket =
         socket
-        |> Phoenix.LiveView.put_flash(:error, "You must re-authenticate to access this page.")
         |> Phoenix.LiveView.redirect(to: ~p"/admin_users/log-in?reauth=true")
 
       {:halt, socket}

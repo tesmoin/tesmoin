@@ -2,6 +2,7 @@ defmodule TesmoinWeb.AdminUserLive.LoginTest do
   use TesmoinWeb.ConnCase, async: true
 
   import Phoenix.LiveViewTest
+  import Swoosh.TestAssertions
   import Tesmoin.AccountsFixtures
 
   describe "login page" do
@@ -82,10 +83,34 @@ defmodule TesmoinWeb.AdminUserLive.LoginTest do
 
       assert html =~ "Tesmoin"
       assert html =~ "Email address"
+      assert html =~ "You must re-authenticate to access this page."
       refute html =~ "Register"
       assert html =~ "Send magic link"
       assert html =~ ~s(name="admin_user[email]")
       refute html =~ ~s(value="#{admin_user.email}")
+    end
+
+    test "sends a re-authentication magic link", %{conn: conn, admin_user: admin_user} do
+      {:ok, lv, _html} = live(conn, ~p"/admin_users/log-in?reauth=true")
+      drain_sent_emails()
+
+      _html =
+        form(lv, "#login_form_magic", admin_user: %{email: admin_user.email})
+        |> render_submit()
+
+      assert_email_sent(fn email ->
+        email.to == [{"", admin_user.email}] and
+          String.contains?(email.text_body, "/admin_users/log-in/") and
+          String.contains?(email.text_body, "?reauth=true")
+      end)
+    end
+  end
+
+  defp drain_sent_emails do
+    receive do
+      {:email, _email} -> drain_sent_emails()
+    after
+      0 -> :ok
     end
   end
 end

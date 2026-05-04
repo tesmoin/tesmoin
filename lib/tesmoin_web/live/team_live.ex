@@ -23,7 +23,11 @@ defmodule TesmoinWeb.TeamLive do
      )}
   end
 
-  def handle_event("show-invite-form", _params, %{assigns: %{current_user_is_admin: false}} = socket) do
+  def handle_event(
+        "show-invite-form",
+        _params,
+        %{assigns: %{current_user_is_admin: false}} = socket
+      ) do
     {:noreply, socket}
   end
 
@@ -45,7 +49,11 @@ defmodule TesmoinWeb.TeamLive do
     {:noreply, assign(socket, form: to_form(changeset))}
   end
 
-  def handle_event("resend-invitation", _params, %{assigns: %{current_user_is_admin: false}} = socket) do
+  def handle_event(
+        "resend-invitation",
+        _params,
+        %{assigns: %{current_user_is_admin: false}} = socket
+      ) do
     {:noreply, socket}
   end
 

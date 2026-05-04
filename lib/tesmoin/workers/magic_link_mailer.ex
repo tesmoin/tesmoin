@@ -19,11 +19,12 @@ defmodule Tesmoin.Workers.MagicLinkMailer do
   alias TesmoinWeb.Endpoint
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"admin_user_id" => id}}) do
+  def perform(%Oban.Job{args: %{"admin_user_id" => id} = args}) do
     admin_user = Accounts.get_admin_user!(id)
+    reauth_query = if args["reauth"], do: "?reauth=true", else: ""
 
     Accounts.deliver_login_instructions(admin_user, fn token ->
-      Endpoint.url() <> "/admin_users/log-in/" <> token
+      Endpoint.url() <> "/admin_users/log-in/" <> token <> reauth_query
     end)
 
     :ok

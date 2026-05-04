@@ -62,8 +62,11 @@ defmodule TesmoinWeb.AdminUserLive.Confirmation do
           >
             <input type="hidden" name={@form[:token].name} value={@form[:token].value} />
             <%= if @current_scope do %>
-              <.button phx-disable-with="Logging in..." class="backoffice-button-primary w-full">
-                Log in
+              <.button
+                phx-disable-with="Logging in..."
+                class="backoffice-button-primary w-full"
+              >
+                {if @reauth_mode, do: "Re-authenticate", else: "Log in"}
               </.button>
             <% else %>
               <.button
@@ -86,12 +89,18 @@ defmodule TesmoinWeb.AdminUserLive.Confirmation do
   end
 
   @impl true
-  def mount(%{"token" => token}, _session, socket) do
+  def mount(%{"token" => token} = params, _session, socket) do
     if admin_user = Accounts.get_admin_user_by_magic_link_token(token) do
       form = to_form(%{"token" => token}, as: "admin_user")
+      reauth_mode = params["reauth"] == "true"
 
-      {:ok, assign(socket, admin_user: admin_user, form: form, trigger_submit: false),
-       temporary_assigns: [form: nil]}
+      {:ok,
+       assign(socket,
+         admin_user: admin_user,
+         form: form,
+         trigger_submit: false,
+         reauth_mode: reauth_mode
+       ), temporary_assigns: [form: nil]}
     else
       {:ok,
        socket

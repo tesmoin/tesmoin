@@ -60,10 +60,10 @@ defmodule Tesmoin.Team do
     end
   end
 
-  @doc "Deletes an admin user unless they are the last admin in the team."
+  @doc "Deletes an admin user unless they are the last admin user in the team."
   def delete_admin_user(%AdminUser{} = admin_user) do
     case Repo.transact(fn ->
-           if member_is_admin?(admin_user.id) and admin_member_count() == 1 do
+           if admin_user_count() <= 1 do
              {:error, :last_admin}
            else
              Repo.delete(admin_user)
@@ -77,11 +77,8 @@ defmodule Tesmoin.Team do
     end
   end
 
-  defp admin_member_count do
-    StoreMembership
-    |> where([m], m.role == "admin")
-    |> select([m], m.admin_user_id)
-    |> distinct(true)
+  defp admin_user_count do
+    AdminUser
     |> Repo.aggregate(:count)
   end
 

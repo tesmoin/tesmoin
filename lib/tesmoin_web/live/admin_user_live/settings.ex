@@ -97,6 +97,13 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
               <p class="mt-2 text-sm text-slate-600">
                 This action is permanent. You will lose access to all stores and cannot undo this later.
               </p>
+
+              <p
+                :if={@delete_error}
+                class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-200"
+              >
+                {@delete_error}
+              </p>
             </div>
 
             <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
@@ -147,6 +154,7 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
       |> assign(:current_email, admin_user.email)
       |> assign(:email_form, to_form(email_changeset))
       |> assign(:show_delete_modal, false)
+      |> assign(:delete_error, nil)
 
     {:ok, socket}
   end
@@ -165,11 +173,11 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
   end
 
   def handle_event("open-delete-modal", _params, socket) do
-    {:noreply, assign(socket, :show_delete_modal, true)}
+    {:noreply, socket |> assign(:show_delete_modal, true) |> assign(:delete_error, nil)}
   end
 
   def handle_event("cancel-delete-modal", _params, socket) do
-    {:noreply, assign(socket, :show_delete_modal, false)}
+    {:noreply, socket |> assign(:show_delete_modal, false) |> assign(:delete_error, nil)}
   end
 
   def handle_event("update_email", params, socket) do
@@ -201,11 +209,10 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
 
       {:error, :last_admin} ->
         {:noreply,
-         socket
-         |> assign(:show_delete_modal, false)
-         |> put_flash(
-           :error,
-           "You are the only admin. Promote a non-admin to admin before deleting your account."
+         assign(
+           socket,
+           :delete_error,
+           "You are the only admin on this team. Promote another member to admin before deleting your account."
          )}
     end
   end

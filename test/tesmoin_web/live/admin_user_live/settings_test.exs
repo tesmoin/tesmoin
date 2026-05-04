@@ -1,7 +1,9 @@
 defmodule TesmoinWeb.AdminUserLive.SettingsTest do
   use TesmoinWeb.ConnCase, async: true
 
+  import Ecto.Query
   alias Tesmoin.Accounts
+  alias Tesmoin.Accounts.AdminUser
   alias Tesmoin.Repo
   alias Tesmoin.Stores.{Store, StoreMembership}
   import Phoenix.LiveViewTest
@@ -93,8 +95,9 @@ defmodule TesmoinWeb.AdminUserLive.SettingsTest do
   end
 
   describe "delete account" do
-    test "deletes own account when user is not the only admin", %{conn: conn} do
+    test "blocks deleting own account when user is the only admin user", %{conn: conn} do
       admin_user = admin_user_fixture()
+      Repo.delete_all(from(u in AdminUser, where: u.id != ^admin_user.id))
 
       {:ok, lv, _html} =
         conn
@@ -107,16 +110,18 @@ defmodule TesmoinWeb.AdminUserLive.SettingsTest do
 
       assert render(lv) =~ "Delete your account?"
 
-      lv
-      |> element("#delete-account-confirm-form")
-      |> render_submit()
+      result =
+        lv
+        |> element("#delete-account-confirm-form")
+        |> render_submit()
 
-      assert_redirect(lv, ~p"/admin_users/log-in")
-      refute Accounts.get_admin_user_by_email(admin_user.email)
+      assert result =~ "You are the only admin"
+      assert Accounts.get_admin_user_by_email(admin_user.email)
     end
 
-    test "blocks deleting own account when user is the only admin", %{conn: conn} do
+    test "blocks deleting own account when user is the only store admin", %{conn: conn} do
       admin_user = admin_user_fixture()
+      Repo.delete_all(from(u in AdminUser, where: u.id != ^admin_user.id))
       store = store_fixture()
       _membership = membership_fixture(admin_user, store, "admin")
 

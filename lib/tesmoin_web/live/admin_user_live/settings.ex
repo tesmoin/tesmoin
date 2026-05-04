@@ -40,8 +40,15 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
               spellcheck="false"
               required
             />
-            <div>
-              <.button variant="primary" phx-disable-with="Sending link...">Change email</.button>
+            <div class="flex items-center gap-3">
+              <button
+                type="submit"
+                phx-disable-with="Sending..."
+                class="backoffice-button-primary px-4 py-2"
+              >
+                Change email
+              </button>
+              <span :if={@email_sent} class="text-sm font-medium text-emerald-600">Link sent!</span>
             </div>
           </.form>
         </div>
@@ -153,6 +160,7 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
       socket
       |> assign(:current_email, admin_user.email)
       |> assign(:email_form, to_form(email_changeset))
+      |> assign(:email_sent, false)
       |> assign(:show_delete_modal, false)
       |> assign(:delete_error, nil)
 
@@ -193,7 +201,8 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
           &url(~p"/admin_users/settings/confirm-email/#{&1}")
         )
 
-        {:noreply, socket}
+        Process.send_after(self(), :clear_email_sent, 2000)
+        {:noreply, assign(socket, :email_sent, true)}
 
       changeset ->
         {:noreply, assign(socket, :email_form, to_form(changeset, action: :insert))}
@@ -215,5 +224,10 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
            "You are the only admin on this team. Promote another member to admin before deleting your account."
          )}
     end
+  end
+
+  @impl true
+  def handle_info(:clear_email_sent, socket) do
+    {:noreply, assign(socket, :email_sent, false)}
   end
 end

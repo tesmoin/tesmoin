@@ -21,7 +21,7 @@ defmodule TesmoinWeb.StoreLive.Index do
             <h1 class="text-2xl font-bold text-slate-800">Stores</h1>
 
             <p class="mt-1 text-sm text-slate-500">
-              Each store is an independent ecommerce site with its own dataset.
+              Each store represents an independent ecommerce site with its own dataset.
             </p>
           </div>
 
@@ -45,7 +45,7 @@ defmodule TesmoinWeb.StoreLive.Index do
             <p class="font-semibold text-slate-800">No stores yet</p>
 
             <p class="mt-1 text-sm text-slate-500">
-              Add your first store to start collecting reviews and processing orders.
+              Add your first store to start collecting reviews.
             </p>
           </div>
 

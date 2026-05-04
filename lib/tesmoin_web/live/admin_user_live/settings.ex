@@ -64,7 +64,7 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
           <h2 class="text-base font-semibold text-red-700 mb-1">Delete account</h2>
 
           <p class="text-sm text-slate-500 mb-5">
-            This permanently removes your account and revokes all your store access.
+            This permanently removes your account and revokes all your access.
           </p>
 
           <form id="delete-account-form" phx-submit="open-delete-modal">

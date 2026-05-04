@@ -27,7 +27,7 @@ defmodule TesmoinWeb.DashboardLive do
 
             <p class="mt-2 text-sm text-slate-500 leading-relaxed">
               Before you can collect reviews, process transactions, or send review requests,
-              you need to connect at least one store to this node.
+              you need to connect at least one store.
             </p>
           </div>
 

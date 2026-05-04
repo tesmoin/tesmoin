@@ -111,7 +111,7 @@ defmodule TesmoinWeb.TeamLive do
           <div>
             <h1 class="text-2xl font-bold text-slate-800">Team</h1>
 
-            <p class="mt-1 text-sm text-slate-500">Manage who has access to this node.</p>
+            <p class="mt-1 text-sm text-slate-500">Manage who has access.</p>
           </div>
 
           <button

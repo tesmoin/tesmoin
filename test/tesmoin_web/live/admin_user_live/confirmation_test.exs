@@ -70,9 +70,6 @@ defmodule TesmoinWeb.AdminUserLive.ConfirmationTest do
 
       conn = follow_trigger_action(form, conn)
 
-      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
-               "Admin user confirmed successfully."
-
       assert Accounts.get_admin_user!(admin_user.id).confirmed_at
       # we are logged in now
       assert get_session(conn, :admin_user_token)
@@ -102,10 +99,7 @@ defmodule TesmoinWeb.AdminUserLive.ConfirmationTest do
       form = form(lv, "#login_form", %{"admin_user" => %{"token" => token}})
       render_submit(form)
 
-      conn = follow_trigger_action(form, conn)
-
-      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
-               "Welcome back!"
+      _conn = follow_trigger_action(form, conn)
 
       assert Accounts.get_admin_user!(admin_user.id).confirmed_at == admin_user.confirmed_at
 

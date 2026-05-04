@@ -50,7 +50,6 @@ defmodule TesmoinWeb.TeamLive do
 
         {:noreply,
          socket
-         |> put_flash(:info, "Invitation sent successfully.")
          |> assign(
            show_invite_form: false,
            form: to_form(changeset),
@@ -69,10 +68,7 @@ defmodule TesmoinWeb.TeamLive do
       {parsed_member_id, ""} ->
         case Team.change_member_role(current_user, parsed_member_id, role) do
           {:ok, :updated} ->
-            {:noreply,
-             socket
-             |> put_flash(:info, "Role updated.")
-             |> assign(:members, Team.list_members())}
+            {:noreply, assign(socket, :members, Team.list_members())}
 
           {:error, :admin_not_editable} ->
             {:noreply, put_flash(socket, :error, "Admin roles cannot be edited from Team.")}

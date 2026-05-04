@@ -24,7 +24,7 @@ defmodule TesmoinWeb.AdminUserLive.SettingsTest do
 
       assert {:redirect, %{to: path, flash: flash}} = redirect
       assert path == ~p"/admin_users/log-in"
-      assert %{"error" => "You must log in to access this page."} = flash
+      assert flash == %{}
     end
 
     test "redirects if admin_user is not in sudo mode", %{conn: conn} do
@@ -58,7 +58,7 @@ defmodule TesmoinWeb.AdminUserLive.SettingsTest do
         })
         |> render_submit()
 
-      assert result =~ "A link to confirm your email"
+      refute result =~ "A link to confirm your email"
       assert Accounts.get_admin_user_by_email(admin_user.email)
     end
 
@@ -201,8 +201,7 @@ defmodule TesmoinWeb.AdminUserLive.SettingsTest do
 
       assert {:live_redirect, %{to: path, flash: flash}} = redirect
       assert path == ~p"/admin_users/settings"
-      assert %{"info" => message} = flash
-      assert message == "Email changed successfully."
+      assert flash == %{}
       refute Accounts.get_admin_user_by_email(admin_user.email)
       assert Accounts.get_admin_user_by_email(email)
 
@@ -228,8 +227,7 @@ defmodule TesmoinWeb.AdminUserLive.SettingsTest do
       {:error, redirect} = live(conn, ~p"/admin_users/settings/confirm-email/#{token}")
       assert {:redirect, %{to: path, flash: flash}} = redirect
       assert path == ~p"/admin_users/log-in"
-      assert %{"error" => message} = flash
-      assert message == "You must log in to access this page."
+      assert flash == %{}
     end
   end
 

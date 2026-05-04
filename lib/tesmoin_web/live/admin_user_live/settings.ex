@@ -129,7 +129,7 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
     socket =
       case Accounts.update_admin_user_email(socket.assigns.current_scope.admin_user, token) do
         {:ok, _admin_user} ->
-          put_flash(socket, :info, "Email changed successfully.")
+          socket
 
         {:error, _} ->
           put_flash(socket, :error, "Email change link is invalid or it has expired.")
@@ -185,8 +185,7 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
           &url(~p"/admin_users/settings/confirm-email/#{&1}")
         )
 
-        info = "A link to confirm your email change has been sent to the new address."
-        {:noreply, socket |> put_flash(:info, info)}
+        {:noreply, socket}
 
       changeset ->
         {:noreply, assign(socket, :email_form, to_form(changeset, action: :insert))}
@@ -198,10 +197,7 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
 
     case Team.delete_admin_user(admin_user) do
       {:ok, _deleted_user} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Your account has been deleted.")
-         |> redirect(to: ~p"/admin_users/log-in")}
+        {:noreply, redirect(socket, to: ~p"/admin_users/log-in")}
 
       {:error, :last_admin} ->
         {:noreply,

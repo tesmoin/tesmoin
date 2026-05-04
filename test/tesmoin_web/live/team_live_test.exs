@@ -24,8 +24,6 @@ defmodule TesmoinWeb.TeamLiveTest do
       |> form("#member-role-form-#{member.id}", %{member_id: member.id, role: "editor"})
       |> render_submit()
 
-      assert render(lv) =~ "Role updated."
-
       roles =
         StoreMembership
         |> where([m], m.admin_user_id == ^member.id)

@@ -59,7 +59,7 @@ defmodule TesmoinWeb.InvitationLive do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} hide_public_auth_action={true}>
       <div class="mx-auto max-w-md">
         <%= case @state do %>
           <% :pending -> %>

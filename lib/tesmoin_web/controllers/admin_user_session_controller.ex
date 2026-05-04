@@ -8,15 +8,15 @@ defmodule TesmoinWeb.AdminUserSessionController do
   alias TesmoinWeb.AdminUserAuth
 
   def create(conn, %{"_action" => "confirmed"} = params) do
-    create(conn, params, "Admin user confirmed successfully.")
+    do_create(conn, params)
   end
 
   def create(conn, params) do
-    create(conn, params, "Welcome back!")
+    do_create(conn, params)
   end
 
   # magic link login
-  defp create(conn, %{"admin_user" => %{"token" => token} = admin_user_params}, info) do
+  defp do_create(conn, %{"admin_user" => %{"token" => token} = admin_user_params}) do
     client_ip = conn.remote_ip
 
     case RateLimiter.check_token_redemption(client_ip) do
@@ -32,7 +32,6 @@ defmodule TesmoinWeb.AdminUserSessionController do
             AdminUserAuth.disconnect_sessions(tokens_to_disconnect)
 
             conn
-            |> put_flash(:info, info)
             |> AdminUserAuth.log_in_admin_user(admin_user, admin_user_params)
 
           _ ->
@@ -47,7 +46,7 @@ defmodule TesmoinWeb.AdminUserSessionController do
     end
   end
 
-  defp create(conn, _params, _info) do
+  defp do_create(conn, _params) do
     conn
     |> put_flash(:error, "The link is invalid or it has expired.")
     |> redirect(to: ~p"/admin_users/log-in")
@@ -55,7 +54,6 @@ defmodule TesmoinWeb.AdminUserSessionController do
 
   def delete(conn, _params) do
     conn
-    |> put_flash(:info, "Logged out successfully.")
     |> AdminUserAuth.log_out_admin_user()
   end
 end

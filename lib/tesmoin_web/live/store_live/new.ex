@@ -23,10 +23,7 @@ defmodule TesmoinWeb.StoreLive.New do
   def handle_event("save", %{"store" => params}, socket) do
     case Stores.create_store(socket.assigns.current_scope, params) do
       {:ok, _store} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Store created successfully.")
-         |> push_navigate(to: ~p"/stores")}
+        {:noreply, push_navigate(socket, to: ~p"/stores")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}

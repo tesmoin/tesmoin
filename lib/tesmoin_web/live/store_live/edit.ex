@@ -21,10 +21,7 @@ defmodule TesmoinWeb.StoreLive.Edit do
   def handle_event("save", %{"store" => params}, socket) do
     case Stores.update_store(socket.assigns.store, params) do
       {:ok, _store} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Store updated successfully.")
-         |> push_navigate(to: ~p"/stores")}
+        {:noreply, push_navigate(socket, to: ~p"/stores")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
@@ -93,7 +90,7 @@ defmodule TesmoinWeb.StoreLive.Edit do
                 <code class="flex-1 text-sm font-mono text-slate-600 select-all">
                   {@store.public_widget_key}
                 </code>
-                 <.icon name="hero-key" class="size-4 shrink-0 text-slate-300" />
+                <.icon name="hero-key" class="size-4 shrink-0 text-slate-300" />
               </div>
 
               <p class="mt-1 text-xs text-slate-400">

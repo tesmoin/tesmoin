@@ -242,7 +242,6 @@ defmodule TesmoinWeb.AdminUserAuth do
     else
       socket =
         socket
-        |> Phoenix.LiveView.put_flash(:error, "You must log in to access this page.")
         |> Phoenix.LiveView.redirect(to: ~p"/admin_users/log-in")
 
       {:halt, socket}
@@ -316,7 +315,6 @@ defmodule TesmoinWeb.AdminUserAuth do
       conn
     else
       conn
-      |> put_flash(:error, "You must log in to access this page.")
       |> maybe_store_return_to()
       |> redirect(to: ~p"/admin_users/log-in")
       |> halt()

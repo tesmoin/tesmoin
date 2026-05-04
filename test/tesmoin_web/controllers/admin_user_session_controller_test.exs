@@ -40,7 +40,6 @@ defmodule TesmoinWeb.AdminUserSessionControllerTest do
 
       assert get_session(conn, :admin_user_token)
       assert redirected_to(conn) == ~p"/"
-      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Admin user confirmed successfully."
 
       assert Accounts.get_admin_user!(admin_user.id).confirmed_at
 
@@ -70,14 +69,12 @@ defmodule TesmoinWeb.AdminUserSessionControllerTest do
       conn = conn |> log_in_admin_user(admin_user) |> delete(~p"/admin_users/log-out")
       assert redirected_to(conn) == ~p"/"
       refute get_session(conn, :admin_user_token)
-      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Logged out successfully"
     end
 
     test "succeeds even if the admin_user is not logged in", %{conn: conn} do
       conn = delete(conn, ~p"/admin_users/log-out")
       assert redirected_to(conn) == ~p"/"
       refute get_session(conn, :admin_user_token)
-      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Logged out successfully"
     end
   end
 end

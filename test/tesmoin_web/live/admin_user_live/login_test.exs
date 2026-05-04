@@ -20,12 +20,12 @@ defmodule TesmoinWeb.AdminUserLive.LoginTest do
 
       {:ok, lv, _html} = live(conn, ~p"/admin_users/log-in")
 
-      {:ok, _lv, html} =
+      html =
         form(lv, "#login_form_magic", admin_user: %{email: admin_user.email})
         |> render_submit()
-        |> follow_redirect(conn, ~p"/admin_users/log-in")
 
-      assert html =~ "If your email is in our system"
+      assert html =~ "Check your inbox"
+      assert html =~ admin_user.email
 
       assert Tesmoin.Repo.get_by!(Tesmoin.Accounts.AdminUserToken, admin_user_id: admin_user.id).context ==
                "login"
@@ -34,12 +34,11 @@ defmodule TesmoinWeb.AdminUserLive.LoginTest do
     test "does not disclose if admin_user is registered", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/admin_users/log-in")
 
-      {:ok, _lv, html} =
+      html =
         form(lv, "#login_form_magic", admin_user: %{email: "idonotexist@example.com"})
         |> render_submit()
-        |> follow_redirect(conn, ~p"/admin_users/log-in")
 
-      assert html =~ "If your email is in our system"
+      assert html =~ "Check your inbox"
     end
   end
 

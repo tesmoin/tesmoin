@@ -379,9 +379,7 @@ defmodule TesmoinWeb.AdminUserAuthTest do
       assert conn.halted
 
       assert redirected_to(conn) == ~p"/admin_users/log-in"
-
-      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
-               "You must log in to access this page."
+      assert conn.assigns.flash == %{}
     end
 
     test "stores the path to redirect to on GET", %{conn: conn} do

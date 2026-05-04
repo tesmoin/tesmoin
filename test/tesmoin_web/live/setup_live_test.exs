@@ -31,12 +31,12 @@ defmodule TesmoinWeb.SetupLiveTest do
     test "creates confirmed admin and sends magic link on valid email", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/setup")
 
-      {:ok, _lv, html} =
+      html =
         form(lv, "#setup_form", admin_user: %{email: "newadmin@example.com"})
         |> render_submit()
-        |> follow_redirect(conn, ~p"/admin_users/log-in")
 
-      assert html =~ "Account created!"
+      assert html =~ "Check your inbox"
+      assert html =~ "newadmin@example.com"
 
       admin_user = Tesmoin.Repo.get_by!(Tesmoin.Accounts.AdminUser, email: "newadmin@example.com")
       assert admin_user.confirmed_at

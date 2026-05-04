@@ -351,7 +351,7 @@ Use this list before exposing Tesmoin publicly.
 
 ### Required
 
-- `PHX_HOST` set to your public host name
+- `HOSTNAME` set to your public host name
 - `SECRET_KEY_BASE` set to a strong secret
 - `DATABASE_URL` set and reachable
 - `SMTP_HOST` configured (plus SMTP credentials as needed)

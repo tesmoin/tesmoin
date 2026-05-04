@@ -19,6 +19,10 @@ defmodule TesmoinWeb.AdminUserLive.Confirmation do
         </div>
 
         <div class="backoffice-card p-6 sm:p-8">
+          <p class="mb-4 rounded-xl border border-primary-200 bg-secondary-soft/70 px-3 py-2 text-sm text-slate-700">
+            Logging in as <span class="font-semibold text-slate-900">{@admin_user.email}</span>.
+          </p>
+
           <.form
             :if={!@admin_user.confirmed_at}
             for={@form}

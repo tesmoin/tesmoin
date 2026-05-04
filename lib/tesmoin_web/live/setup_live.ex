@@ -20,7 +20,7 @@ defmodule TesmoinWeb.SetupLive do
             Initial setup
           </p>
           <h1 class="text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Create your first admin and launch your Tesmoin workspace.
+            Create your first admin user.
           </h1>
           <p class="max-w-lg text-sm leading-relaxed text-neutral-ink sm:text-base">
             This email receives a one-time sign-in link. Tesmoin uses passwordless authentication for
@@ -39,7 +39,7 @@ defmodule TesmoinWeb.SetupLive do
               </li>
               <li class="flex items-start gap-2">
                 <.icon name="hero-check-circle" class="mt-0.5 size-4 text-primary-700" />
-                <span>You can start configuring reviews and Q&A flows right away.</span>
+                <span>You can start configuring your store(s) and reviews right away.</span>
               </li>
             </ul>
           </div>
@@ -70,22 +70,54 @@ defmodule TesmoinWeb.SetupLive do
             </div>
           </div>
 
-          <.form for={@form} id="setup_form" phx-submit="submit" class="mt-5 space-y-4">
-            <.input
-              field={@form[:email]}
-              type="email"
-              label="Admin Email"
-              autocomplete="username"
-              spellcheck="false"
-              class="backoffice-input"
-              error_class="border-red-300 ring-red-200"
-              required
-              phx-mounted={JS.focus()}
-            />
-            <.button class="backoffice-button-primary mt-2 w-full">
-              Create admin account <span aria-hidden="true">→</span>
-            </.button>
-          </.form>
+          <%= if @setup_done do %>
+            <div class="mt-5 flex flex-col items-center gap-4 py-6 text-center">
+              <div class="flex size-14 items-center justify-center rounded-full bg-primary-100">
+                <.icon name="hero-envelope" class="size-7 text-primary-700" />
+              </div>
+              <div>
+                <p class="text-base font-semibold text-slate-900">Check your inbox</p>
+                <p class="mt-1 text-sm text-neutral-ink">
+                  We sent a sign-in link to <span class="font-medium text-slate-800">{@setup_email}</span>.
+                </p>
+              </div>
+              <div
+                :if={local_mail_adapter?()}
+                class="w-full rounded-xl border border-primary-200 bg-secondary-soft/90 p-3 text-sm text-slate-700"
+              >
+                <div class="flex items-center gap-2">
+                  <.icon name="hero-information-circle" class="size-5 shrink-0 text-primary-700" />
+                  <p>
+                    Using local adapter —
+                    <.link
+                      href="/dev/mailbox"
+                      class="font-semibold text-primary-700 underline decoration-primary-300 underline-offset-4"
+                    >
+                      open mailbox
+                    </.link>
+                    to get your link.
+                  </p>
+                </div>
+              </div>
+            </div>
+          <% else %>
+            <.form for={@form} id="setup_form" phx-submit="submit" class="mt-5 space-y-4">
+              <.input
+                field={@form[:email]}
+                type="email"
+                label="Admin Email"
+                autocomplete="username"
+                spellcheck="false"
+                class="backoffice-input"
+                error_class="border-red-300 ring-red-200"
+                required
+                phx-mounted={JS.focus()}
+              />
+              <.button class="backoffice-button-primary mt-2 w-full">
+                Create admin account <span aria-hidden="true">→</span>
+              </.button>
+            </.form>
+          <% end %>
         </div>
       </section>
     </Layouts.app>
@@ -106,7 +138,7 @@ defmodule TesmoinWeb.SetupLive do
         end
 
       form = to_form(%{"email" => ""}, as: "admin_user")
-      {:ok, assign(socket, form: form, client_ip: client_ip)}
+      {:ok, assign(socket, form: form, client_ip: client_ip, setup_done: false, setup_email: nil)}
     end
   end
 
@@ -130,12 +162,7 @@ defmodule TesmoinWeb.SetupLive do
               :ok ->
                 Logger.info("Setup: first admin account created", email: email)
 
-                info = "Account created! Check your email for your sign-in link."
-
-                {:noreply,
-                 socket
-                 |> put_flash(:info, info)
-                 |> push_navigate(to: ~p"/admin_users/log-in")}
+                {:noreply, assign(socket, setup_done: true, setup_email: email)}
 
               {:error, reason} ->
                 Logger.error("Setup: failed to enqueue magic link email",
@@ -144,12 +171,11 @@ defmodule TesmoinWeb.SetupLive do
                 )
 
                 {:noreply,
-                 socket
-                 |> put_flash(
+                 put_flash(
+                   socket,
                    :error,
                    "Account created, but we could not queue your sign-in email. Please request a new sign-in link from the login page."
-                 )
-                 |> push_navigate(to: ~p"/admin_users/log-in")}
+                 )}
             end
 
           {:error, :already_setup} ->

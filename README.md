@@ -74,7 +74,7 @@ This pricing model keeps the node highly valuable on its own while making the sh
 The authentication workflow is simple and self-hosting friendly.
 
 - Tesmoin is magic-link-only for admin authentication (no passwords).
-- On first boot, either use `/setup` or set `TESMOIN_ADMIN_EMAIL` to seed the first admin.
+- On first boot, use `/setup` to create the first admin.
 - Authentication for the node admin panel remains local to the node.
 - If the merchant activates the paid plan, the Tesmoin website generates a license key.
 - The node stores and validates the license key locally and can later sync plan entitlements with the sentinel or licensing service.
@@ -244,7 +244,7 @@ Those are phase two multipliers, not phase one foundations.
 - Phoenix app with LiveView
 - PostgreSQL and Ecto setup
 - Docker-based local deployment
-- installation bootstrap for first admin email and magic-link login
+- initial setup wizard for first admin email and magic-link login
 - basic authentication and settings pages
 
 ### Milestone 2: Transaction and Invitation Pipeline
@@ -307,16 +307,6 @@ Tesmoin uses **magic-link-only authentication**. There are no passwords. Admins 
 
 On a fresh installation with no admin account, every route redirects to `/setup`. Fill in an email address and a magic link is sent to that address. Click it to log in and start using the node.
 
-#### Bootstrap via environment variable
-
-For automated or Docker-based deployments, set `TESMOIN_ADMIN_EMAIL` to pre-create a confirmed admin account on boot. If no account with that email exists yet, it is created and confirmed automatically. A magic link can then be requested from the login page.
-
-```env
-TESMOIN_ADMIN_EMAIL=admin@yourdomain.com
-```
-
-This variable is optional. If not set, the `/setup` wizard handles first-run account creation.
-
 ### Mailer
 
 #### Development
@@ -371,7 +361,6 @@ Use this list before exposing Tesmoin publicly.
 ### Strongly Recommended
 
 - `TRUSTED_PROXIES` set to the IP(s) of your reverse proxy so rate limits and audit logs use real client IPs
-- `TESMOIN_ADMIN_EMAIL` set for automated first boot in non-interactive deployments
 - Monitor Oban queue health and SMTP delivery failures
 
 ### Auth/Cookie Security Notes

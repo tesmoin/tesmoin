@@ -34,7 +34,7 @@ defmodule TesmoinWeb.AdminUserLive.SettingsTest do
           token_authenticated_at: DateTime.add(DateTime.utc_now(:second), -11, :minute)
         )
         |> live(~p"/admin_users/settings")
-        |> follow_redirect(conn, ~p"/admin_users/log-in")
+        |> follow_redirect(conn, ~p"/admin_users/log-in?reauth=true")
 
       assert conn.resp_body =~ "You must re-authenticate to access this page."
     end

@@ -58,13 +58,13 @@ defmodule TesmoinWeb.StoreLive.New do
       <div class="mx-auto max-w-xl">
         <div class="mb-6">
           <h1 class="text-2xl font-bold text-slate-800">Add a store</h1>
-          
+
           <p class="mt-1 text-sm text-slate-500">
             Connect an ecommerce storefront to this node. Each store has its own silo of reviews,
             orders, and analytics.
           </p>
         </div>
-        
+
         <div class="backoffice-card p-6 sm:p-8">
           <.form
             for={@form}
@@ -92,7 +92,7 @@ defmodule TesmoinWeb.StoreLive.New do
                 Lowercase letters, numbers, and hyphens only. Auto-filled from name.
               </p>
             </div>
-            
+
             <.input
               field={@form[:primary_url]}
               type="url"

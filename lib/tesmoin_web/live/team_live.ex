@@ -247,6 +247,7 @@ defmodule TesmoinWeb.TeamLive do
                 <div class="flex flex-wrap gap-1.5 shrink-0 items-center">
                   <%= if editable_member?(@current_user_is_admin, member) do %>
                     <form
+                      phx-change="change-role"
                       phx-submit="change-role"
                       id={"member-role-form-#{member.id}"}
                       class="inline-flex items-center gap-2 rounded-full border border-[color-mix(in_oklab,var(--tes-primary)_22%,white)] bg-white/90 px-1.5 py-1 shadow-sm"
@@ -270,12 +271,6 @@ defmodule TesmoinWeb.TeamLive do
                           class="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-slate-500"
                         />
                       </div>
-                      <button
-                        type="submit"
-                        class="inline-flex items-center gap-1 rounded-full bg-[--tes-primary] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-110"
-                      >
-                        <.icon name="hero-check" class="size-3.5" /> Apply
-                      </button>
                     </form>
                   <% else %>
                     <%= if role = member_role(member) do %>

@@ -6,6 +6,14 @@
 @source "../js";
 @source "../../lib/tesmoin_web";
 
+@font-face {
+  font-family: "Petit Formal Script";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/petit-formal-script.ttf") format("truetype");
+}
+
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
 @plugin "../vendor/heroicons";
@@ -113,6 +121,20 @@
 
 body {
   font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+}
+
+.auth-brand-wordmark {
+  font-family: "Petit Formal Script", "Avenir Next", "Sora", "Segoe UI", sans-serif;
+  font-size: clamp(1.95rem, 3.5vw, 2.35rem);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: #111827;
+  text-wrap: balance;
+}
+
+.auth-brand-wordmark-nav {
+  font-size: clamp(1.55rem, 2.4vw, 1.9rem);
 }
 
 .bg-secondary-soft {

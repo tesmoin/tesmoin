@@ -22,8 +22,7 @@ config :tesmoin, :scopes,
 
 config :tesmoin,
   ecto_repos: [Tesmoin.Repo],
-  generators: [timestamp_type: :utc_datetime],
-  bootstrap_on_start: true
+  generators: [timestamp_type: :utc_datetime]
 
 # Configure the endpoint
 config :tesmoin, TesmoinWeb.Endpoint,

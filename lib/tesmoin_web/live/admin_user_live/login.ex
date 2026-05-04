@@ -13,78 +13,26 @@ defmodule TesmoinWeb.AdminUserLive.Login do
       flash={@flash}
       current_scope={@current_scope}
       hide_public_auth_action={true}
+      minimal_chrome={true}
     >
-      <section class="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-        <div class="space-y-5">
-          <p class="inline-flex items-center rounded-full bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary-700 shadow-sm">
-            Admin access
-          </p>
-          <h1 class="text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Sign in to Tesmoin.
-          </h1>
-          <p class="max-w-lg text-sm leading-relaxed text-neutral-ink sm:text-base">
-            We send a one-time magic link by email. No password reset flow, no credential reuse risks.
-          </p>
-          <div class="rounded-2xl border border-tertiary-300/70 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
-            <p class="text-sm font-medium text-slate-800">Secure by design</p>
-            <ul class="mt-3 space-y-2 text-sm text-neutral-ink">
-              <li class="flex items-start gap-2">
-                <.icon name="hero-shield-check" class="mt-0.5 size-4 text-tertiary-600" />
-                <span>Magic links expire quickly and are single use.</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <.icon name="hero-shield-check" class="mt-0.5 size-4 text-tertiary-600" />
-                <span>Rate limiting protects login endpoints from abuse.</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <.icon name="hero-shield-check" class="mt-0.5 size-4 text-tertiary-600" />
-                <span>All sessions are secured with HttpOnly cookies.</span>
-              </li>
-            </ul>
-          </div>
+      <section class="mx-auto max-w-md py-4 sm:py-10">
+        <div class="mb-7 flex flex-col items-center gap-3 text-center">
+          <img src={~p"/images/tesmoin-logo.png"} alt="Tesmoin" class="h-12 w-auto sm:h-14" />
+          <h1 class="auth-brand-wordmark">Tesmoin</h1>
         </div>
 
         <div class="backoffice-card p-6 sm:p-8">
-          <h2 class="text-xl font-semibold text-slate-900">Log in</h2>
-          <p class="mt-2 text-sm text-neutral-ink">
-            <%= if @current_scope do %>
-              Reauthenticate to continue with this sensitive action.
-            <% else %>
-              Enter your admin email to receive a secure sign-in link.
-            <% end %>
-          </p>
-
-          <div
-            :if={local_mail_adapter?()}
-            class="mt-5 rounded-xl border border-primary-200 bg-secondary-soft/90 p-3 text-sm text-slate-700"
-          >
-            <div class="flex items-start gap-2">
-              <.icon name="hero-information-circle" class="mt-0.5 size-5 shrink-0 text-primary-700" />
-              <p>
-                Local mail adapter is active. Open
-                <.link
-                  href="/dev/mailbox"
-                  class="font-semibold text-primary-700 underline decoration-primary-300 underline-offset-4"
-                >
-                  /dev/mailbox
-                </.link>
-                to inspect outgoing emails.
-              </p>
-            </div>
-          </div>
-
           <.form
             for={@form}
             id="login_form_magic"
             action={~p"/admin_users/log-in"}
             phx-submit="submit_magic"
-            class="mt-5 space-y-4"
+            class="space-y-4"
           >
             <.input
-              readonly={!!@current_scope}
               field={@form[:email]}
               type="email"
-              label="Email"
+              label="Email address"
               autocomplete="username"
               spellcheck="false"
               class="backoffice-input"
@@ -93,7 +41,7 @@ defmodule TesmoinWeb.AdminUserLive.Login do
               phx-mounted={JS.focus()}
             />
             <.button class="backoffice-button-primary mt-2 w-full">
-              Send magic link <span aria-hidden="true">→</span>
+              Send magic link
             </.button>
           </.form>
         </div>
@@ -104,11 +52,7 @@ defmodule TesmoinWeb.AdminUserLive.Login do
 
   @impl true
   def mount(_params, _session, socket) do
-    email =
-      Phoenix.Flash.get(socket.assigns.flash, :email) ||
-        get_in(socket.assigns, [:current_scope, Access.key(:admin_user), Access.key(:email)])
-
-    form = to_form(%{"email" => email}, as: "admin_user")
+    form = to_form(%{"email" => ""}, as: "admin_user")
 
     client_ip =
       if connected?(socket) do
@@ -160,10 +104,6 @@ defmodule TesmoinWeb.AdminUserLive.Login do
          |> put_flash(:info, info)
          |> push_navigate(to: ~p"/admin_users/log-in")}
     end
-  end
-
-  defp local_mail_adapter? do
-    Application.get_env(:tesmoin, Tesmoin.Mailer)[:adapter] == Swoosh.Adapters.Local
   end
 
   defp enqueue_magic_link_email(job_attrs) do

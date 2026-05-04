@@ -20,13 +20,7 @@ defmodule Tesmoin.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Tesmoin.Supervisor]
-    result = Supervisor.start_link(children, opts)
-
-    if Application.get_env(:tesmoin, :bootstrap_on_start, true) do
-      Tesmoin.Bootstrap.seed_admin_user()
-    end
-
-    result
+    Supervisor.start_link(children, opts)
   end
 
   # Tell Phoenix to update the endpoint configuration

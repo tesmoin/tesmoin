@@ -77,17 +77,25 @@ defmodule TesmoinWeb.Router do
   end
 
   scope "/", TesmoinWeb do
-    pipe_through [:browser]
+    pipe_through [:browser, :redirect_if_admin_user_is_authenticated]
 
-    live_session :current_admin_user,
-      on_mount: [{TesmoinWeb.AdminUserAuth, :mount_current_scope}] do
+    live_session :redirect_if_admin_user_is_authenticated,
+      on_mount: [{TesmoinWeb.AdminUserAuth, :redirect_if_admin_user_is_authenticated}] do
       live "/setup", SetupLive, :new
       live "/admin_users/log-in", AdminUserLive.Login, :new
-      live "/admin_users/log-in/:token", AdminUserLive.Confirmation, :new
-      live "/invitations/:token", InvitationLive, :new
     end
+  end
+
+  scope "/", TesmoinWeb do
+    pipe_through [:browser]
 
     post "/admin_users/log-in", AdminUserSessionController, :create
     delete "/admin_users/log-out", AdminUserSessionController, :delete
+
+    live_session :current_admin_user,
+      on_mount: [{TesmoinWeb.AdminUserAuth, :mount_current_scope}] do
+      live "/admin_users/log-in/:token", AdminUserLive.Confirmation, :new
+      live "/invitations/:token", InvitationLive, :new
+    end
   end
 end

@@ -218,6 +218,22 @@ defmodule TesmoinWeb.AdminUserAuth do
     {:cont, mount_current_scope(socket, session)}
   end
 
+  def on_mount(:redirect_if_admin_user_is_authenticated, params, session, socket) do
+    socket = mount_current_scope(socket, session)
+
+    if socket.assigns.current_scope && socket.assigns.current_scope.admin_user &&
+         params["reauth"] != "true" do
+      socket =
+        Phoenix.LiveView.redirect(socket,
+          to: signed_in_path_for_scope(socket.assigns.current_scope)
+        )
+
+      {:halt, socket}
+    else
+      {:cont, socket}
+    end
+  end
+
   def on_mount(:require_authenticated, _params, session, socket) do
     socket = mount_current_scope(socket, session)
 
@@ -242,7 +258,7 @@ defmodule TesmoinWeb.AdminUserAuth do
       socket =
         socket
         |> Phoenix.LiveView.put_flash(:error, "You must re-authenticate to access this page.")
-        |> Phoenix.LiveView.redirect(to: ~p"/admin_users/log-in")
+        |> Phoenix.LiveView.redirect(to: ~p"/admin_users/log-in?reauth=true")
 
       {:halt, socket}
     end
@@ -287,6 +303,11 @@ defmodule TesmoinWeb.AdminUserAuth do
 
   def signed_in_path(_), do: ~p"/"
 
+  defp signed_in_path_for_scope(%Scope{admin_user: %Accounts.AdminUser{}}),
+    do: ~p"/admin_users/settings"
+
+  defp signed_in_path_for_scope(_), do: ~p"/"
+
   @doc """
   Plug for routes that require the admin_user to be authenticated.
   """
@@ -299,6 +320,22 @@ defmodule TesmoinWeb.AdminUserAuth do
       |> maybe_store_return_to()
       |> redirect(to: ~p"/admin_users/log-in")
       |> halt()
+    end
+  end
+
+  @doc """
+  Redirects away from auth-entry pages when an admin user is already authenticated.
+  """
+  def redirect_if_admin_user_is_authenticated(conn, _opts) do
+    conn = fetch_query_params(conn)
+
+    if conn.assigns.current_scope && conn.assigns.current_scope.admin_user &&
+         conn.params["reauth"] != "true" do
+      conn
+      |> redirect(to: signed_in_path(conn))
+      |> halt()
+    else
+      conn
     end
   end
 

@@ -10,26 +10,15 @@ defmodule TesmoinWeb.AdminUserLive.Confirmation do
       flash={@flash}
       current_scope={@current_scope}
       hide_public_auth_action={true}
+      minimal_chrome={true}
     >
-      <section class="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-        <div class="space-y-5">
-          <p class="inline-flex items-center rounded-full bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary-700 shadow-sm">
-            Secure access
-          </p>
-          <h1 class="text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Finish signing in with your magic link.
-          </h1>
-          <p class="max-w-lg text-sm leading-relaxed text-neutral-ink sm:text-base">
-            You are authenticating as {@admin_user.email}. Choose whether this device should stay signed in.
-          </p>
+      <section class="mx-auto max-w-md py-4 sm:py-10">
+        <div class="mb-7 flex flex-col items-center gap-3 text-center">
+          <img src={~p"/images/tesmoin-logo.png"} alt="Tesmoin" class="h-12 w-auto sm:h-14" />
+          <h1 class="auth-brand-wordmark">Tesmoin</h1>
         </div>
 
         <div class="backoffice-card p-6 sm:p-8">
-          <h2 class="text-xl font-semibold text-slate-900">Welcome {@admin_user.email}</h2>
-          <p class="mt-2 text-sm text-neutral-ink">
-            Confirm this sign-in session to continue.
-          </p>
-
           <.form
             :if={!@admin_user.confirmed_at}
             for={@form}
@@ -38,7 +27,7 @@ defmodule TesmoinWeb.AdminUserLive.Confirmation do
             phx-submit="submit"
             action={~p"/admin_users/log-in?_action=confirmed"}
             phx-trigger-action={@trigger_submit}
-            class="mt-5 space-y-3"
+            class="space-y-3"
           >
             <input type="hidden" name={@form[:token].name} value={@form[:token].value} />
             <.button
@@ -65,7 +54,7 @@ defmodule TesmoinWeb.AdminUserLive.Confirmation do
             phx-mounted={JS.focus_first()}
             action={~p"/admin_users/log-in"}
             phx-trigger-action={@trigger_submit}
-            class="mt-5 space-y-3"
+            class="space-y-3"
           >
             <input type="hidden" name={@form[:token].name} value={@form[:token].value} />
             <%= if @current_scope do %>

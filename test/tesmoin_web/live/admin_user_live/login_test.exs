@@ -8,7 +8,8 @@ defmodule TesmoinWeb.AdminUserLive.LoginTest do
     test "renders login page", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/admin_users/log-in")
 
-      assert html =~ "Log in"
+      assert html =~ "Tesmoin"
+      assert html =~ "Email address"
       assert html =~ "Send magic link"
     end
   end
@@ -59,6 +60,16 @@ defmodule TesmoinWeb.AdminUserLive.LoginTest do
   end
 
   describe "login navigation" do
+    test "redirects authenticated admin_user away from login", %{conn: conn} do
+      admin_user = admin_user_fixture()
+
+      assert {:error, {:redirect, %{to: path}}} =
+               conn
+               |> log_in_admin_user(admin_user)
+               |> live(~p"/admin_users/log-in")
+
+      assert path == ~p"/admin_users/settings"
+    end
   end
 
   describe "re-authentication (sudo mode)" do
@@ -68,13 +79,14 @@ defmodule TesmoinWeb.AdminUserLive.LoginTest do
     end
 
     test "shows login page with email filled in", %{conn: conn, admin_user: admin_user} do
-      {:ok, _lv, html} = live(conn, ~p"/admin_users/log-in")
+      {:ok, _lv, html} = live(conn, ~p"/admin_users/log-in?reauth=true")
 
-      assert html =~ "Reauthenticate to continue"
+      assert html =~ "Tesmoin"
+      assert html =~ "Email address"
       refute html =~ "Register"
       assert html =~ "Send magic link"
       assert html =~ ~s(name="admin_user[email]")
-      assert html =~ ~s(value="#{admin_user.email}")
+      refute html =~ ~s(value="#{admin_user.email}")
     end
   end
 end

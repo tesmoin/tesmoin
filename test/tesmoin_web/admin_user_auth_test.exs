@@ -421,6 +421,42 @@ defmodule TesmoinWeb.AdminUserAuthTest do
     end
   end
 
+  describe "redirect_if_admin_user_is_authenticated/2" do
+    test "redirects if admin_user is authenticated", %{conn: conn, admin_user: admin_user} do
+      conn =
+        conn
+        |> assign(:current_scope, Scope.for_admin_user(admin_user))
+        |> fetch_flash()
+        |> AdminUserAuth.redirect_if_admin_user_is_authenticated([])
+
+      assert conn.halted
+      assert redirected_to(conn) == ~p"/admin_users/settings"
+    end
+
+    test "does not redirect if admin_user is not authenticated", %{conn: conn} do
+      conn =
+        conn
+        |> assign(:current_scope, Scope.for_admin_user(nil))
+        |> fetch_flash()
+        |> AdminUserAuth.redirect_if_admin_user_is_authenticated([])
+
+      refute conn.halted
+      refute conn.status
+    end
+
+    test "does not redirect in re-authentication mode", %{conn: conn, admin_user: admin_user} do
+      conn =
+        conn
+        |> assign(:current_scope, Scope.for_admin_user(admin_user))
+        |> fetch_flash()
+        |> Map.put(:query_string, "reauth=true")
+        |> AdminUserAuth.redirect_if_admin_user_is_authenticated([])
+
+      refute conn.halted
+      refute conn.status
+    end
+  end
+
   describe "disconnect_sessions/1" do
     test "broadcasts disconnect messages for each token" do
       tokens = [%{token: "token1"}, %{token: "token2"}]

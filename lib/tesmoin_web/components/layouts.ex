@@ -35,6 +35,10 @@ defmodule TesmoinWeb.Layouts do
     default: false,
     doc: "hides the public log in CTA on auth-focused screens"
 
+  attr :minimal_chrome, :boolean,
+    default: false,
+    doc: "hides app chrome (header/nav) for focused auth pages"
+
   attr :stores, :list, default: []
   attr :current_store, :map, default: nil
 
@@ -44,16 +48,17 @@ defmodule TesmoinWeb.Layouts do
     ~H"""
     <div class="relative min-h-screen overflow-hidden">
       <div class="absolute inset-0 -z-10 backoffice-mesh"></div>
-      <div class="mx-auto max-w-7xl px-4 pb-10 pt-6 sm:px-6 lg:px-8">
-        <header class="backoffice-shell mb-8 flex flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-5">
+      <div class={[
+        "mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8",
+        if(@minimal_chrome, do: "pt-10 sm:pt-14", else: "pt-6")
+      ]}>
+        <header
+          :if={!@minimal_chrome}
+          class="backoffice-shell mb-8 flex flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-5"
+        >
           <a href={~p"/"} class="flex items-center gap-3">
             <img src={~p"/images/tesmoin-logo.png"} alt="Tesmoin" class="h-10 w-auto" />
-            <div>
-              <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-primary-700">
-                Tesmoin
-              </p>
-              <p class="text-sm font-semibold text-slate-700">Control Suite</p>
-            </div>
+            <h1 class="auth-brand-wordmark auth-brand-wordmark-nav">Tesmoin</h1>
           </a>
 
           <nav class="flex flex-wrap items-center gap-3">

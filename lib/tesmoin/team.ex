@@ -132,6 +132,27 @@ defmodule Tesmoin.Team do
   end
 
   @doc """
+  Re-enqueues the invitation email for an existing pending invitation.
+
+  Returns `{:ok, invitation}` if the invitation is still pending, or
+  `{:error, :not_pending}` if it has already been accepted or has expired.
+  """
+  def resend_invitation(%MemberInvitation{} = invitation) do
+    now = DateTime.utc_now(:second)
+
+    if is_nil(invitation.accepted_at) and DateTime.compare(invitation.expires_at, now) == :gt do
+      {:ok, _job} =
+        %{invitation_id: invitation.id}
+        |> Tesmoin.Workers.InvitationMailer.new()
+        |> Oban.insert()
+
+      {:ok, invitation}
+    else
+      {:error, :not_pending}
+    end
+  end
+
+  @doc """
   Creates an invitation and enqueues the delivery email.
 
   If a pending (non-accepted, non-expired) invitation already exists for the

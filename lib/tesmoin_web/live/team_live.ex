@@ -18,7 +18,8 @@ defmodule TesmoinWeb.TeamLive do
        form: to_form(changeset),
        roles: AdminUser.valid_roles(),
        current_user_is_admin: Team.admin_member?(current_user.id),
-       show_invite_form: false
+       show_invite_form: false,
+       resent_invitation_id: nil
      )}
   end
 
@@ -42,6 +43,25 @@ defmodule TesmoinWeb.TeamLive do
       |> Map.put(:action, :validate)
 
     {:noreply, assign(socket, form: to_form(changeset))}
+  end
+
+  def handle_event("resend-invitation", _params, %{assigns: %{current_user_is_admin: false}} = socket) do
+    {:noreply, socket}
+  end
+
+  def handle_event("resend-invitation", %{"id" => id}, socket) do
+    invitation = Team.get_invitation!(id)
+    int_id = invitation.id
+
+    case Team.resend_invitation(invitation) do
+      {:ok, _} ->
+        Process.send_after(self(), {:clear_resent, int_id}, 2000)
+        {:noreply, assign(socket, resent_invitation_id: int_id)}
+
+      {:error, :not_pending} ->
+        pending = Team.list_pending_invitations()
+        {:noreply, assign(socket, pending_invitations: pending)}
+    end
   end
 
   def handle_event("invite", _params, %{assigns: %{current_user_is_admin: false}} = socket) do
@@ -94,6 +114,10 @@ defmodule TesmoinWeb.TeamLive do
       _ ->
         {:noreply, put_flash(socket, :error, "Invalid member.")}
     end
+  end
+
+  def handle_info({:clear_resent, _id}, socket) do
+    {:noreply, assign(socket, resent_invitation_id: nil)}
   end
 
   def render(assigns) do
@@ -179,15 +203,11 @@ defmodule TesmoinWeb.TeamLive do
                   <div class="min-w-0">
                     <p class="text-sm font-medium text-slate-800 truncate">{member.email}</p>
 
-                    <%= if member.store_memberships == [] do %>
-                      <p class="text-xs text-slate-400">No store memberships</p>
-                    <% else %>
-                      <p class="text-xs text-slate-400 truncate">
-                        {member.store_memberships
-                        |> Enum.map(& &1.store.name)
-                        |> Enum.join(", ")}
-                      </p>
-                    <% end %>
+                    <p class="text-xs text-slate-400 truncate">
+                      {member.store_memberships
+                      |> Enum.map(& &1.store.name)
+                      |> Enum.join(", ")}
+                    </p>
                   </div>
                 </div>
 
@@ -256,12 +276,28 @@ defmodule TesmoinWeb.TeamLive do
                   </p>
                 </div>
 
-                <span class={[
-                  "rounded-full px-2 py-0.5 text-xs font-semibold",
-                  role_badge_class(inv.role)
-                ]}>
-                  {String.capitalize(inv.role)}
-                </span>
+                <div class="flex items-center gap-3 shrink-0">
+                  <span class={[
+                    "rounded-full px-2 py-0.5 text-xs font-semibold",
+                    role_badge_class(inv.role)
+                  ]}>
+                    {String.capitalize(inv.role)}
+                  </span>
+
+                  <%= if @current_user_is_admin do %>
+                    <%= if @resent_invitation_id == inv.id do %>
+                      <span class="text-xs font-medium text-emerald-600">Sent!</span>
+                    <% else %>
+                      <button
+                        phx-click="resend-invitation"
+                        phx-value-id={inv.id}
+                        class="text-xs text-slate-400 hover:text-[--tes-primary] transition-colors"
+                      >
+                        Resend
+                      </button>
+                    <% end %>
+                  <% end %>
+                </div>
               </li>
             <% end %>
           </ul>

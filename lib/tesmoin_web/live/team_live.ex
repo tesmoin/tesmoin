@@ -2,8 +2,8 @@ defmodule TesmoinWeb.TeamLive do
   use TesmoinWeb, :live_view
 
   alias Tesmoin.Team
+  alias Tesmoin.Accounts.AdminUser
   alias Tesmoin.Team.MemberInvitation
-  alias Tesmoin.Stores.StoreMembership
 
   def mount(_params, _session, socket) do
     members = Team.list_members()
@@ -16,10 +16,14 @@ defmodule TesmoinWeb.TeamLive do
        members: members,
        pending_invitations: pending,
        form: to_form(changeset),
-       roles: StoreMembership.valid_roles(),
+       roles: AdminUser.valid_roles(),
        current_user_is_admin: Team.admin_member?(current_user.id),
        show_invite_form: false
      )}
+  end
+
+  def handle_event("show-invite-form", _params, %{assigns: %{current_user_is_admin: false}} = socket) do
+    {:noreply, socket}
   end
 
   def handle_event("show-invite-form", _params, socket) do
@@ -38,6 +42,10 @@ defmodule TesmoinWeb.TeamLive do
       |> Map.put(:action, :validate)
 
     {:noreply, assign(socket, form: to_form(changeset))}
+  end
+
+  def handle_event("invite", _params, %{assigns: %{current_user_is_admin: false}} = socket) do
+    {:noreply, socket}
   end
 
   def handle_event("invite", %{"member_invitation" => params}, socket) do
@@ -79,9 +87,6 @@ defmodule TesmoinWeb.TeamLive do
           {:error, :invalid_role} ->
             {:noreply, put_flash(socket, :error, "Invalid role selected.")}
 
-          {:error, :no_memberships} ->
-            {:noreply, put_flash(socket, :error, "Member has no store memberships.")}
-
           {:error, :not_found} ->
             {:noreply, put_flash(socket, :error, "Member not found.")}
         end
@@ -110,7 +115,7 @@ defmodule TesmoinWeb.TeamLive do
           </div>
 
           <button
-            :if={!@show_invite_form}
+            :if={@current_user_is_admin && !@show_invite_form}
             phx-click="show-invite-form"
             class="backoffice-button-primary inline-flex items-center gap-2 px-4 py-2.5"
           >
@@ -135,67 +140,13 @@ defmodule TesmoinWeb.TeamLive do
               placeholder="colleague@example.com"
               required
             />
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
-              <select
-                name="member_invitation[role]"
-                id="member_invitation_role"
-                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-[--tes-primary] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_oklab,var(--tes-primary)_30%,white)]"
-              >
-                <option value="">Select a role...</option>
-
-                <option
-                  :for={role <- MemberInvitation.valid_roles()}
-                  value={role}
-                  selected={@form[:role].value == role}
-                >
-                  {String.capitalize(role)}
-                </option>
-              </select>
-              <%= if @form[:role].errors != [] do %>
-                <p class="mt-1 text-xs text-red-500">
-                  {elem(hd(@form[:role].errors), 0) |> Phoenix.Naming.humanize()}
-                </p>
-              <% end %>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-2">
-                Stores <span class="text-slate-400 font-normal ml-1">- select one or more</span>
-              </label>
-              <%= if @stores == [] do %>
-                <p class="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  No stores yet.
-                  <.link navigate={~p"/stores/new"} class="font-semibold underline">
-                    Add a store
-                  </.link>
-                  first.
-                </p>
-              <% else %>
-                <div class="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <%= for store <- @stores do %>
-                    <label class="flex items-center gap-3 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        name="member_invitation[store_ids][]"
-                        value={store.id}
-                        checked={store.id in (Phoenix.HTML.Form.input_value(@form, :store_ids) || [])}
-                        class="size-4 rounded border-slate-300 accent-[--tes-primary]"
-                      />
-                      <span class="text-sm text-slate-700 group-hover:text-slate-900">
-                        {store.name} <span class="text-slate-400 text-xs ml-1">/{store.slug}</span>
-                      </span>
-                    </label>
-                  <% end %>
-                </div>
-              <% end %>
-
-              <%= if @form[:store_ids].errors != [] do %>
-                <p class="mt-1 text-xs text-red-500">
-                  {elem(hd(@form[:store_ids].errors), 0) |> Phoenix.Naming.humanize()}
-                </p>
-              <% end %>
-            </div>
+            <.input
+              field={@form[:role]}
+              type="select"
+              label="Role"
+              prompt="Select a role..."
+              options={Enum.map(MemberInvitation.valid_roles(), &{String.capitalize(&1), &1})}
+            />
 
             <div class="flex gap-3 pt-1">
               <button
@@ -320,7 +271,7 @@ defmodule TesmoinWeb.TeamLive do
     """
   end
 
-  defp member_role(member), do: member.store_memberships |> List.first() |> then(&(&1 && &1.role))
+  defp member_role(member), do: member.role
 
   defp editable_member?(false, _member), do: false
   defp editable_member?(true, member), do: member_role(member) not in [nil, "admin"]

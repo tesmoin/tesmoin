@@ -250,9 +250,9 @@ defmodule TesmoinWeb.AdminUserLive.SettingsTest do
     |> Repo.insert!()
   end
 
-  defp membership_fixture(admin_user, store, role) do
+  defp membership_fixture(admin_user, store, _role) do
     %StoreMembership{}
-    |> StoreMembership.changeset(%{admin_user_id: admin_user.id, store_id: store.id, role: role})
+    |> StoreMembership.changeset(%{admin_user_id: admin_user.id, store_id: store.id})
     |> Repo.insert!()
   end
 end

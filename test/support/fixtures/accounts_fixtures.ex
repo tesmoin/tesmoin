@@ -14,7 +14,8 @@ defmodule Tesmoin.AccountsFixtures do
 
   def valid_admin_user_attributes(attrs \\ %{}) do
     Enum.into(attrs, %{
-      email: unique_admin_user_email()
+      email: unique_admin_user_email(),
+      role: "admin"
     })
   end
 

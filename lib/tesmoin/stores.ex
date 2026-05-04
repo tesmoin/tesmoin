@@ -82,8 +82,7 @@ defmodule Tesmoin.Stores do
     %StoreMembership{}
     |> StoreMembership.changeset(%{
       admin_user_id: admin_user_id,
-      store_id: store_id,
-      role: "admin"
+      store_id: store_id
     })
     |> Repo.insert()
   end

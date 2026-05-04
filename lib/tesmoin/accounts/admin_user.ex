@@ -3,9 +3,11 @@ defmodule Tesmoin.Accounts.AdminUser do
   import Ecto.Changeset
 
   alias Tesmoin.Stores.StoreMembership
+  @valid_roles ~w(admin editor moderator)
 
   schema "admin_users" do
     field :email, :string
+    field :role, :string, default: "moderator"
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
@@ -131,4 +133,26 @@ defmodule Tesmoin.Accounts.AdminUser do
     Pbkdf2.no_user_verify()
     false
   end
+
+  def registration_changeset(admin_user, attrs) do
+    admin_user
+    |> cast(attrs, [:email, :role])
+    |> validate_email([])
+    |> validate_role()
+  end
+
+  def role_changeset(admin_user, attrs) do
+    admin_user
+    |> cast(attrs, [:role])
+    |> validate_required([:role])
+    |> validate_role()
+  end
+
+  defp validate_role(changeset) do
+    validate_inclusion(changeset, :role, @valid_roles,
+      message: "must be admin, editor, or moderator"
+    )
+  end
+
+  def valid_roles, do: @valid_roles
 end

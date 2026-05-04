@@ -28,6 +28,15 @@ defmodule TesmoinWeb.SetupLiveTest do
       assert path == ~p"/admin_users/log-in"
     end
 
+    test "renders setup page when only non-admin users exist (e.g. editor)", %{conn: conn} do
+      _editor = admin_user_fixture(%{role: "editor"})
+
+      {:ok, _lv, html} = live(conn, ~p"/setup")
+
+      assert html =~ "Welcome to Tesmoin"
+      assert html =~ "Create admin account"
+    end
+
     test "creates confirmed admin and sends magic link on valid email", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/setup")
 

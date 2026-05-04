@@ -3,15 +3,13 @@ defmodule Tesmoin.Team.MemberInvitation do
   import Ecto.Changeset
 
   alias Tesmoin.Accounts.AdminUser
-  alias Tesmoin.Stores.StoreMembership
 
-  @valid_roles StoreMembership.valid_roles()
+  @valid_roles AdminUser.valid_roles()
   @token_validity_days 7
 
   schema "member_invitations" do
     field :email, :string
     field :role, :string
-    field :store_ids, {:array, :integer}, default: []
     field :token, :string
     field :accepted_at, :utc_datetime
     field :expires_at, :utc_datetime
@@ -23,14 +21,13 @@ defmodule Tesmoin.Team.MemberInvitation do
 
   def changeset(invitation, attrs) do
     invitation
-    |> cast(attrs, [:email, :role, :store_ids])
-    |> validate_required([:email, :role, :store_ids])
+    |> cast(attrs, [:email, :role])
+    |> validate_required([:email, :role])
     |> validate_format(:email, ~r/^[^@,;\s]+@[^@,;\s]+$/,
       message: "must be a valid email address"
     )
     |> validate_length(:email, max: 160)
     |> validate_inclusion(:role, @valid_roles, message: "must be admin, editor, or moderator")
-    |> validate_length(:store_ids, min: 1, message: "select at least one store")
     |> put_token()
     |> put_expires_at()
   end

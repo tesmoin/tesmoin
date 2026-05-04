@@ -85,7 +85,9 @@ config :tesmoin, Oban,
     {Oban.Plugins.Cron,
      crontab: [
        # Prune expired auth tokens every hour
-       {"0 * * * *", Tesmoin.Workers.TokenPruner}
+       {"0 * * * *", Tesmoin.Workers.TokenPruner},
+       # Prune expired unaccepted invitations nightly at 2am
+       {"0 2 * * *", Tesmoin.Workers.InvitationPruner}
      ]}
   ],
   repo: Tesmoin.Repo

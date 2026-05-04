@@ -351,7 +351,17 @@ defmodule TesmoinWeb.AdminUserAuth do
     if setup_path_exempt?(conn.request_path) or Accounts.admin_user_exists?() do
       conn
     else
-      conn |> redirect(to: ~p"/setup") |> halt()
+      # No admin exists — if the user is authenticated (e.g. a non-admin whose
+      # admin was deleted), log them out first so they don't get caught in a
+      # redirect loop between /setup and authenticated-only routes.
+      admin_user_token = get_session(conn, :admin_user_token)
+      admin_user_token && Accounts.delete_admin_user_session_token(admin_user_token)
+
+      conn
+      |> renew_session(nil)
+      |> delete_resp_cookie(@remember_me_cookie, @remember_me_options)
+      |> redirect(to: ~p"/setup")
+      |> halt()
     end
   end
 

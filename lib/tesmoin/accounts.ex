@@ -58,7 +58,7 @@ defmodule Tesmoin.Accounts do
   """
   def register_admin_user(attrs) do
     %AdminUser{}
-    |> AdminUser.email_changeset(attrs)
+    |> AdminUser.registration_changeset(attrs)
     |> Repo.insert()
   end
 
@@ -76,22 +76,26 @@ defmodule Tesmoin.Accounts do
     Repo.transact(fn ->
       Repo.query!("SELECT pg_advisory_xact_lock($1)", [@setup_advisory_lock])
 
-      if Repo.exists?(AdminUser) do
+      if Repo.exists?(from u in AdminUser, where: u.role == "admin") do
         {:error, :already_setup}
       else
+        attrs = Map.put(attrs, :role, "admin")
+
         %AdminUser{}
-        |> AdminUser.email_changeset(attrs)
+        |> AdminUser.registration_changeset(attrs)
         |> Repo.insert()
       end
     end)
   end
 
   @doc """
-  Returns true if at least one admin user exists in the database.
+  Returns true if at least one admin user with role "admin" exists in the database.
   Used to determine whether first-run setup is still needed.
   """
   def admin_user_exists? do
-    Repo.exists?(AdminUser)
+    AdminUser
+    |> where([u], u.role == "admin")
+    |> Repo.exists?()
   end
 
   @doc """

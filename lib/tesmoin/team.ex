@@ -2,8 +2,8 @@ defmodule Tesmoin.Team do
   @moduledoc """
   Context for managing team members and invitations.
 
-  Members are admin_users who have been granted a role on one or more stores
-  via store_memberships. Invitations allow new users to be onboarded via email.
+  Members are admin_users with a global role and optional store memberships.
+  Invitations allow new users to be onboarded via email.
   """
 
   import Ecto.Query
@@ -11,7 +11,7 @@ defmodule Tesmoin.Team do
   alias Tesmoin.Repo
   alias Tesmoin.Accounts
   alias Tesmoin.Accounts.AdminUser
-  alias Tesmoin.Stores.StoreMembership
+  alias Tesmoin.Stores.{Store, StoreMembership}
   alias Tesmoin.Team.MemberInvitation
 
   # ---------------------------------------------------------------------------
@@ -26,21 +26,21 @@ defmodule Tesmoin.Team do
     |> Repo.preload(store_memberships: :store)
   end
 
-  @doc "Returns true when the given admin user has an admin role in at least one store."
+  @doc "Returns true when the given admin user has the global admin role."
   def admin_member?(admin_user_id) when is_integer(admin_user_id) do
-    StoreMembership
-    |> where([m], m.admin_user_id == ^admin_user_id and m.role == "admin")
+    AdminUser
+    |> where([u], u.id == ^admin_user_id and u.role == "admin")
     |> Repo.exists?()
   end
 
-  @doc "Changes a member role across all of their store memberships."
+  @doc "Changes a member global role."
   def change_member_role(%AdminUser{} = actor, member_id, new_role)
       when is_integer(member_id) and is_binary(new_role) do
     cond do
       not admin_member?(actor.id) ->
         {:error, :forbidden}
 
-      new_role not in StoreMembership.valid_roles() ->
+      new_role not in AdminUser.valid_roles() ->
         {:error, :invalid_role}
 
       not Repo.exists?(from(u in AdminUser, where: u.id == ^member_id)) ->
@@ -51,11 +51,11 @@ defmodule Tesmoin.Team do
 
       true ->
         case Repo.update_all(
-               from(m in StoreMembership, where: m.admin_user_id == ^member_id),
+               from(u in AdminUser, where: u.id == ^member_id),
                set: [role: new_role]
              ) do
-          {0, _} -> {:error, :no_memberships}
-          {_count, _} -> {:ok, :updated}
+          {1, _} -> {:ok, :updated}
+          _ -> {:error, :not_found}
         end
     end
   end
@@ -63,7 +63,7 @@ defmodule Tesmoin.Team do
   @doc "Deletes an admin user unless they are the last admin user in the team."
   def delete_admin_user(%AdminUser{} = admin_user) do
     case Repo.transact(fn ->
-           if admin_user_count() <= 1 do
+           if admin_user_count() <= 1 || last_admin?(admin_user) do
              {:error, :last_admin}
            else
              Repo.delete(admin_user)
@@ -82,9 +82,17 @@ defmodule Tesmoin.Team do
     |> Repo.aggregate(:count)
   end
 
+  defp last_admin?(%AdminUser{role: "admin"}) do
+    AdminUser
+    |> where([u], u.role == "admin")
+    |> Repo.aggregate(:count) <= 1
+  end
+
+  defp last_admin?(_admin_user), do: false
+
   defp member_is_admin?(admin_user_id) do
-    StoreMembership
-    |> where([m], m.admin_user_id == ^admin_user_id and m.role == "admin")
+    AdminUser
+    |> where([u], u.id == ^admin_user_id and u.role == "admin")
     |> Repo.exists?()
   end
 
@@ -126,6 +134,10 @@ defmodule Tesmoin.Team do
   @doc """
   Creates an invitation and enqueues the delivery email.
 
+  If a pending (non-accepted, non-expired) invitation already exists for the
+  same email, it is deleted first so the invitee always receives only the
+  latest link.
+
   Returns `{:ok, invitation}` or `{:error, changeset}`.
   """
   def create_invitation(attrs, %AdminUser{} = invited_by) do
@@ -133,7 +145,23 @@ defmodule Tesmoin.Team do
       %MemberInvitation{invited_by_id: invited_by.id}
       |> MemberInvitation.changeset(attrs)
 
-    with {:ok, invitation} <- Repo.insert(changeset) do
+    with {:ok, invitation} <-
+           Repo.transact(fn ->
+             # Cancel any pending invitation for the same email
+             if email = changeset.changes[:email] do
+               now = DateTime.utc_now(:second)
+
+               Repo.delete_all(
+                 from i in MemberInvitation,
+                   where:
+                     i.email == ^email and
+                       is_nil(i.accepted_at) and
+                       i.expires_at > ^now
+               )
+             end
+
+             Repo.insert(changeset)
+           end) do
       {:ok, _job} =
         %{invitation_id: invitation.id}
         |> Tesmoin.Workers.InvitationMailer.new()
@@ -147,7 +175,7 @@ defmodule Tesmoin.Team do
   Accepts an invitation for the given email address.
 
   - Finds or creates an AdminUser for the invitation's email.
-  - Creates a StoreMembership for each store in the invitation.
+  - Creates StoreMembership records for all existing stores.
   - Marks the invitation as accepted.
   - Returns `{:ok, admin_user}` so the caller can send a magic link.
 
@@ -165,35 +193,43 @@ defmodule Tesmoin.Team do
 
       true ->
         Repo.transact(fn ->
-          admin_user = find_or_create_admin_user!(invitation.email)
-          create_memberships!(admin_user, invitation)
+          admin_user = find_or_create_admin_user!(invitation.email, invitation.role)
+          create_memberships_for_all_stores!(admin_user)
           mark_accepted!(invitation)
           {:ok, admin_user}
         end)
     end
   end
 
-  defp find_or_create_admin_user!(email) do
+  defp find_or_create_admin_user!(email, role) do
     case Accounts.get_admin_user_by_email(email) do
       nil ->
-        {:ok, user} = Accounts.register_admin_user(%{email: email})
+        {:ok, user} = Accounts.register_admin_user(%{email: email, role: role})
         user
 
       user ->
-        user
+        if user.role == role do
+          user
+        else
+          user
+          |> AdminUser.role_changeset(%{role: role})
+          |> Repo.update!()
+        end
     end
   end
 
-  defp create_memberships!(admin_user, invitation) do
-    for store_id <- invitation.store_ids do
+  defp create_memberships_for_all_stores!(admin_user) do
+    Store
+    |> select([s], s.id)
+    |> Repo.all()
+    |> Enum.each(fn store_id ->
       %StoreMembership{}
       |> StoreMembership.changeset(%{
         admin_user_id: admin_user.id,
-        store_id: store_id,
-        role: invitation.role
+        store_id: store_id
       })
       |> Repo.insert(on_conflict: :nothing)
-    end
+    end)
   end
 
   defp mark_accepted!(invitation) do

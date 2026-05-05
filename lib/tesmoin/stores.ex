@@ -20,10 +20,10 @@ defmodule Tesmoin.Stores do
   end
 
   @doc "Returns stores the admin user is a member of."
-  def list_stores_for_admin_user(admin_user_id) when is_integer(admin_user_id) do
+  def list_stores_for_user(user_id) when is_integer(user_id) do
     Store
     |> join(:inner, [s], m in StoreMembership, on: m.store_id == s.id)
-    |> where([_s, m], m.admin_user_id == ^admin_user_id)
+    |> where([_s, m], m.user_id == ^user_id)
     |> order_by([s, _m], asc: s.inserted_at)
     |> distinct(true)
     |> Repo.all()
@@ -78,20 +78,20 @@ defmodule Tesmoin.Stores do
     Store.update_changeset(store, attrs)
   end
 
-  defp create_owner_membership(%Scope{admin_user: %{id: admin_user_id}}, %Store{id: store_id}) do
+  defp create_owner_membership(%Scope{user: %{id: user_id}}, %Store{id: store_id}) do
     %StoreMembership{}
     |> StoreMembership.changeset(%{
-      admin_user_id: admin_user_id,
+      user_id: user_id,
       store_id: store_id
     })
     |> Repo.insert()
   end
 
-  defp create_owner_membership(%Scope{admin_user: nil}, _store) do
+  defp create_owner_membership(%Scope{user: nil}, _store) do
     {:error,
      Ecto.Changeset.add_error(
        Ecto.Changeset.change(%StoreMembership{}),
-       :admin_user_id,
+       :user_id,
        "is required"
      )}
   end

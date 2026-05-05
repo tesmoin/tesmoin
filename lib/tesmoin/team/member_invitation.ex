@@ -2,9 +2,9 @@ defmodule Tesmoin.Team.MemberInvitation do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Tesmoin.Accounts.AdminUser
+  alias Tesmoin.Accounts.User
 
-  @valid_roles AdminUser.valid_roles()
+  @valid_roles User.valid_roles()
   @token_validity_days 7
 
   schema "member_invitations" do
@@ -14,7 +14,7 @@ defmodule Tesmoin.Team.MemberInvitation do
     field :accepted_at, :utc_datetime
     field :expires_at, :utc_datetime
 
-    belongs_to :invited_by, AdminUser, foreign_key: :invited_by_id
+    belongs_to :invited_by, User, foreign_key: :invited_by_id
 
     timestamps(type: :utc_datetime)
   end

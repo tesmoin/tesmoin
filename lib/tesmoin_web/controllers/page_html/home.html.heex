@@ -17,18 +17,18 @@
       <nav class="flex flex-wrap items-center gap-3">
         <%= if @current_scope do %>
           <span class="hidden rounded-full bg-white px-3 py-1 text-xs font-medium text-neutral-ink shadow-sm sm:inline">
-            {@current_scope.admin_user.email}
+            {@current_scope.user.email}
           </span>
-          <.link href={~p"/admin_users/settings"} class="backoffice-link">Settings</.link>
+          <.link href={~p"/users/settings"} class="backoffice-link">Settings</.link>
           <.link
-            href={~p"/admin_users/log-out"}
+            href={~p"/users/log-out"}
             method="delete"
             class="backoffice-button-secondary"
           >
             Log out
           </.link>
         <% else %>
-          <.link href={~p"/admin_users/log-in"} class="backoffice-button-primary">Log in</.link>
+          <.link href={~p"/users/log-in"} class="backoffice-button-primary">Log in</.link>
         <% end %>
       </nav>
     </header>
@@ -67,18 +67,18 @@
 
         <div class="mt-7 flex flex-wrap gap-3">
           <%= if @current_scope do %>
-            <.link href={~p"/admin_users/settings"} class="backoffice-button-primary">
+            <.link href={~p"/users/settings"} class="backoffice-button-primary">
               Open settings
             </.link>
             <.link
-              href={~p"/admin_users/log-out"}
+              href={~p"/users/log-out"}
               method="delete"
               class="backoffice-button-secondary"
             >
               End session
             </.link>
           <% else %>
-            <.link href={~p"/admin_users/log-in"} class="backoffice-button-primary">
+            <.link href={~p"/users/log-in"} class="backoffice-button-primary">
               Access platform
             </.link>
             <.link href={~p"/setup"} class="backoffice-button-secondary">Run setup</.link>

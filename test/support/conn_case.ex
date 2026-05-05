@@ -37,38 +37,38 @@ defmodule TesmoinWeb.ConnCase do
   end
 
   @doc """
-  Setup helper that registers and logs in admin_users.
+  Setup helper that registers and logs in users.
 
-      setup :register_and_log_in_admin_user
+      setup :register_and_log_in_user
 
-  It stores an updated connection and a registered admin_user in the
+  It stores an updated connection and a registered user in the
   test context.
   """
-  def register_and_log_in_admin_user(%{conn: conn} = context) do
-    admin_user = Tesmoin.AccountsFixtures.admin_user_fixture()
-    scope = Tesmoin.Accounts.Scope.for_admin_user(admin_user)
+  def register_and_log_in_user(%{conn: conn} = context) do
+    user = Tesmoin.AccountsFixtures.user_fixture()
+    scope = Tesmoin.Accounts.Scope.for_user(user)
 
     opts =
       context
       |> Map.take([:token_authenticated_at])
       |> Enum.into([])
 
-    %{conn: log_in_admin_user(conn, admin_user, opts), admin_user: admin_user, scope: scope}
+    %{conn: log_in_user(conn, user, opts), user: user, scope: scope}
   end
 
   @doc """
-  Logs the given `admin_user` into the `conn`.
+  Logs the given `user` into the `conn`.
 
   It returns an updated `conn`.
   """
-  def log_in_admin_user(conn, admin_user, opts \\ []) do
-    token = Tesmoin.Accounts.generate_admin_user_session_token(admin_user)
+  def log_in_user(conn, user, opts \\ []) do
+    token = Tesmoin.Accounts.generate_user_session_token(user)
 
     maybe_set_token_authenticated_at(token, opts[:token_authenticated_at])
 
     conn
     |> Phoenix.ConnTest.init_test_session(%{})
-    |> Plug.Conn.put_session(:admin_user_token, token)
+    |> Plug.Conn.put_session(:user_token, token)
   end
 
   defp maybe_set_token_authenticated_at(_token, nil), do: nil

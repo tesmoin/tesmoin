@@ -8,16 +8,16 @@
 import Config
 
 config :tesmoin, :scopes,
-  admin_user: [
+  user: [
     default: true,
     module: Tesmoin.Accounts.Scope,
     assign_key: :current_scope,
-    access_path: [:admin_user, :id],
-    schema_key: :admin_user_id,
+    access_path: [:user, :id],
+    schema_key: :user_id,
     schema_type: :id,
-    schema_table: :admin_users,
+    schema_table: :users,
     test_data_fixture: Tesmoin.AccountsFixtures,
-    test_setup_helper: :register_and_log_in_admin_user
+    test_setup_helper: :register_and_log_in_user
   ]
 
 config :tesmoin,

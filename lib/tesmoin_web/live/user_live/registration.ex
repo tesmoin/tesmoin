@@ -1,8 +1,8 @@
-defmodule TesmoinWeb.AdminUserLive.Registration do
+defmodule TesmoinWeb.UserLive.Registration do
   use TesmoinWeb, :live_view
 
   alias Tesmoin.Accounts
-  alias Tesmoin.Accounts.AdminUser
+  alias Tesmoin.Accounts.User
 
   @impl true
   def render(assigns) do
@@ -15,7 +15,7 @@ defmodule TesmoinWeb.AdminUserLive.Registration do
             <:subtitle>
               Already registered?
               <.link
-                navigate={~p"/admin_users/log-in"}
+                navigate={~p"/users/log-in"}
                 class="font-semibold text-brand hover:underline"
               >
                 Log in
@@ -46,49 +46,48 @@ defmodule TesmoinWeb.AdminUserLive.Registration do
   end
 
   @impl true
-  def mount(_params, _session, %{assigns: %{current_scope: %{admin_user: admin_user}}} = socket)
-      when not is_nil(admin_user) do
-    {:ok, redirect(socket, to: TesmoinWeb.AdminUserAuth.signed_in_path(socket))}
+  def mount(_params, _session, %{assigns: %{current_scope: %{user: user}}} = socket)
+      when not is_nil(user) do
+    {:ok, redirect(socket, to: TesmoinWeb.UserAuth.signed_in_path(socket))}
   end
 
   def mount(_params, _session, socket) do
-    changeset = Accounts.change_admin_user_email(%AdminUser{}, %{}, validate_unique: false)
-
+    changeset = Accounts.change_user_email(%User{}, %{}, validate_unique: false)
     {:ok, assign_form(socket, changeset), temporary_assigns: [form: nil]}
   end
 
   @impl true
-  def handle_event("save", %{"admin_user" => admin_user_params}, socket) do
-    case Accounts.register_admin_user(admin_user_params) do
-      {:ok, admin_user} ->
+  def handle_event("save", %{"user" => user_params}, socket) do
+    case Accounts.register_user(user_params) do
+      {:ok, user} ->
         {:ok, _} =
           Accounts.deliver_login_instructions(
-            admin_user,
-            &url(~p"/admin_users/log-in/#{&1}")
+            user,
+            &url(~p"/users/log-in/#{&1}")
           )
 
         {:noreply,
          socket
          |> put_flash(
            :info,
-           "An email was sent to #{admin_user.email}, please access it to confirm your account."
+           "An email was sent to #{user.email}, please access it to confirm your account."
          )
-         |> push_navigate(to: ~p"/admin_users/log-in")}
+         |> push_navigate(to: ~p"/users/log-in")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign_form(socket, changeset)}
     end
   end
 
-  def handle_event("validate", %{"admin_user" => admin_user_params}, socket) do
+  def handle_event("validate", %{"user" => user_params}, socket) do
     changeset =
-      Accounts.change_admin_user_email(%AdminUser{}, admin_user_params, validate_unique: false)
+      Accounts.change_user_email(%User{}, user_params, validate_unique: false)
 
     {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
   end
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
-    form = to_form(changeset, as: "admin_user")
+    form = to_form(changeset, as: "user")
     assign(socket, form: form)
   end
 end

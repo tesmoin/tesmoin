@@ -40,9 +40,9 @@ defmodule TesmoinWeb.InvitationLive do
 
       _ ->
         case Team.accept_invitation(invitation) do
-          {:ok, admin_user} ->
+          {:ok, user} ->
             {:ok, _job} =
-              %{admin_user_id: admin_user.id}
+              %{user_id: user.id}
               |> Tesmoin.Workers.MagicLinkMailer.new()
               |> Oban.insert()
 
@@ -59,8 +59,18 @@ defmodule TesmoinWeb.InvitationLive do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope} hide_public_auth_action={true}>
-      <div class="mx-auto max-w-md">
+    <Layouts.app
+      flash={@flash}
+      current_scope={@current_scope}
+      hide_public_auth_action={true}
+      minimal_chrome={true}
+    >
+      <div class="mx-auto max-w-md py-4 sm:py-10">
+        <div class="mb-7 flex flex-col items-center gap-3 text-center">
+          <img src={~p"/images/tesmoin-logo.png"} alt="Tesmoin" class="h-12 w-auto sm:h-14" />
+          <h1 class="auth-brand-wordmark">Tesmoin</h1>
+        </div>
+      <div>
         <%= case @state do %>
           <% :pending -> %>
             <div class="backoffice-card flex flex-col items-center gap-6 px-8 py-12 text-center">
@@ -121,7 +131,7 @@ defmodule TesmoinWeb.InvitationLive do
                 </p>
               </div>
 
-              <.link navigate={~p"/admin_users/log-in"} class="backoffice-button-primary px-6 py-2.5">
+              <.link navigate={~p"/users/log-in"} class="backoffice-button-primary px-6 py-2.5">
                 Go to login
               </.link>
             </div>
@@ -154,6 +164,7 @@ defmodule TesmoinWeb.InvitationLive do
               </div>
             </div>
         <% end %>
+      </div>
       </div>
     </Layouts.app>
     """

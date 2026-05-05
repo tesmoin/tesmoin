@@ -1,7 +1,7 @@
 defmodule TesmoinWeb.Router do
   use TesmoinWeb, :router
 
-  import TesmoinWeb.AdminUserAuth
+  import TesmoinWeb.UserAuth
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -27,7 +27,7 @@ defmodule TesmoinWeb.Router do
           "frame-ancestors 'none'"
     }
 
-    plug :fetch_current_scope_for_admin_user
+    plug :fetch_current_scope_for_user
     plug :redirect_to_setup_if_needed
   end
 
@@ -60,41 +60,41 @@ defmodule TesmoinWeb.Router do
   ## Authentication routes
 
   scope "/", TesmoinWeb do
-    pipe_through [:browser, :require_authenticated_admin_user]
+    pipe_through [:browser, :require_authenticated_user]
 
     post "/stores/switch", StoreSessionController, :create
 
-    live_session :require_authenticated_admin_user,
-      on_mount: [{TesmoinWeb.AdminUserAuth, :require_authenticated}] do
+    live_session :require_authenticated_user,
+      on_mount: [{TesmoinWeb.UserAuth, :require_authenticated}] do
       live "/", DashboardLive, :index
       live "/stores", StoreLive.Index, :index
       live "/stores/new", StoreLive.New, :new
       live "/stores/:id/edit", StoreLive.Edit, :edit
       live "/team", TeamLive, :index
-      live "/admin_users/settings", AdminUserLive.Settings, :edit
-      live "/admin_users/settings/confirm-email/:token", AdminUserLive.Settings, :confirm_email
+      live "/users/settings", UserLive.Settings, :edit
+      live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
     end
   end
 
   scope "/", TesmoinWeb do
-    pipe_through [:browser, :redirect_if_admin_user_is_authenticated]
+    pipe_through [:browser, :redirect_if_user_is_authenticated]
 
-    live_session :redirect_if_admin_user_is_authenticated,
-      on_mount: [{TesmoinWeb.AdminUserAuth, :redirect_if_admin_user_is_authenticated}] do
+    live_session :redirect_if_user_is_authenticated,
+      on_mount: [{TesmoinWeb.UserAuth, :redirect_if_user_is_authenticated}] do
       live "/setup", SetupLive, :new
-      live "/admin_users/log-in", AdminUserLive.Login, :new
+      live "/users/log-in", UserLive.Login, :new
     end
   end
 
   scope "/", TesmoinWeb do
     pipe_through [:browser]
 
-    post "/admin_users/log-in", AdminUserSessionController, :create
-    delete "/admin_users/log-out", AdminUserSessionController, :delete
+    post "/users/log-in", UserSessionController, :create
+    delete "/users/log-out", UserSessionController, :delete
 
-    live_session :current_admin_user,
-      on_mount: [{TesmoinWeb.AdminUserAuth, :mount_current_scope}] do
-      live "/admin_users/log-in/:token", AdminUserLive.Confirmation, :new
+    live_session :current_user,
+      on_mount: [{TesmoinWeb.UserAuth, :mount_current_scope}] do
+      live "/users/log-in/:token", UserLive.Confirmation, :new
       live "/invitations/:token", InvitationLive, :new
     end
   end

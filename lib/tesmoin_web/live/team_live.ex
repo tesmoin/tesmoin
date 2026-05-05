@@ -2,21 +2,21 @@ defmodule TesmoinWeb.TeamLive do
   use TesmoinWeb, :live_view
 
   alias Tesmoin.Team
-  alias Tesmoin.Accounts.AdminUser
+  alias Tesmoin.Accounts.User
   alias Tesmoin.Team.MemberInvitation
 
   def mount(_params, _session, socket) do
     members = Team.list_members()
     pending = Team.list_pending_invitations()
     changeset = Team.change_invitation(%MemberInvitation{})
-    current_user = socket.assigns.current_scope.admin_user
+    current_user = socket.assigns.current_scope.user
 
     {:ok,
      assign(socket,
        members: members,
        pending_invitations: pending,
        form: to_form(changeset),
-       roles: AdminUser.valid_roles(),
+       roles: User.valid_roles(),
        current_user_is_admin: Team.admin_member?(current_user.id),
        show_invite_form: false,
        resent_invitation_id: nil
@@ -77,7 +77,7 @@ defmodule TesmoinWeb.TeamLive do
   end
 
   def handle_event("invite", %{"member_invitation" => params}, socket) do
-    invited_by = socket.assigns.current_scope.admin_user
+    invited_by = socket.assigns.current_scope.user
 
     case Team.create_invitation(params, invited_by) do
       {:ok, _invitation} ->
@@ -98,7 +98,7 @@ defmodule TesmoinWeb.TeamLive do
   end
 
   def handle_event("change-role", %{"member_id" => member_id, "role" => role}, socket) do
-    current_user = socket.assigns.current_scope.admin_user
+    current_user = socket.assigns.current_scope.user
 
     case Integer.parse(member_id) do
       {parsed_member_id, ""} ->
@@ -210,12 +210,6 @@ defmodule TesmoinWeb.TeamLive do
 
                   <div class="min-w-0">
                     <p class="text-sm font-medium text-slate-800 truncate">{member.email}</p>
-
-                    <p class="text-xs text-slate-400 truncate">
-                      {member.store_memberships
-                      |> Enum.map(& &1.store.name)
-                      |> Enum.join(", ")}
-                    </p>
                   </div>
                 </div>
 

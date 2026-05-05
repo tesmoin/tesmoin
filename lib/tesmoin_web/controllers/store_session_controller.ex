@@ -8,9 +8,9 @@ defmodule TesmoinWeb.StoreSessionController do
     current_scope = conn.assigns.current_scope
     parsed_store_id = String.to_integer(store_id)
 
-    if member_store?(current_scope.admin_user.id, parsed_store_id) do
-      case Accounts.set_current_store(current_scope.admin_user, parsed_store_id) do
-        {:ok, _admin_user} ->
+    if member_store?(current_scope.user.id, parsed_store_id) do
+      case Accounts.set_current_store(current_scope.user, parsed_store_id) do
+        {:ok, _user} ->
           conn
           |> put_session(:current_store_id, parsed_store_id)
           |> redirect(to: ~p"/")
@@ -27,9 +27,9 @@ defmodule TesmoinWeb.StoreSessionController do
     end
   end
 
-  defp member_store?(admin_user_id, store_id) do
-    admin_user_id
-    |> Stores.list_stores_for_admin_user()
+  defp member_store?(user_id, store_id) do
+    user_id
+    |> Stores.list_stores_for_user()
     |> Enum.any?(&(&1.id == store_id))
   end
 end

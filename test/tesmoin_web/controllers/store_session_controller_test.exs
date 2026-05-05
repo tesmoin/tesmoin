@@ -9,8 +9,8 @@ defmodule TesmoinWeb.StoreSessionControllerTest do
 
   describe "POST /stores/switch" do
     test "persists selected store in session and admin user", %{conn: conn} do
-      admin_user = admin_user_fixture()
-      scope = Scope.for_admin_user(admin_user)
+      user = user_fixture()
+      scope = Scope.for_user(user)
 
       {:ok, store1} =
         Stores.create_store(scope, %{
@@ -28,19 +28,19 @@ defmodule TesmoinWeb.StoreSessionControllerTest do
 
       conn =
         conn
-        |> log_in_admin_user(admin_user)
+        |> log_in_user(user)
         |> post(~p"/stores/switch", %{"store_id" => Integer.to_string(store2.id)})
 
       assert redirected_to(conn) == ~p"/"
       assert get_session(conn, :current_store_id) == store2.id
-      assert Accounts.get_admin_user!(admin_user.id).current_store_id == store2.id
+      assert Accounts.get_user!(user.id).current_store_id == store2.id
       assert store1.id != store2.id
     end
 
     test "rejects switching to a store the user cannot access", %{conn: conn} do
-      admin_user = admin_user_fixture()
-      other_admin = admin_user_fixture()
-      other_scope = Scope.for_admin_user(other_admin)
+      user = user_fixture()
+      other_admin = user_fixture()
+      other_scope = Scope.for_user(other_admin)
 
       {:ok, other_store} =
         Stores.create_store(other_scope, %{
@@ -51,7 +51,7 @@ defmodule TesmoinWeb.StoreSessionControllerTest do
 
       conn =
         conn
-        |> log_in_admin_user(admin_user)
+        |> log_in_user(user)
         |> post(~p"/stores/switch", %{"store_id" => Integer.to_string(other_store.id)})
 
       assert redirected_to(conn) == ~p"/"
@@ -60,7 +60,7 @@ defmodule TesmoinWeb.StoreSessionControllerTest do
                "You do not have access to that store."
 
       assert get_session(conn, :current_store_id) == nil
-      assert Accounts.get_admin_user!(admin_user.id).current_store_id == nil
+      assert Accounts.get_user!(user.id).current_store_id == nil
     end
   end
 end

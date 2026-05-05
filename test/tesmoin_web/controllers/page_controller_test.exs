@@ -3,6 +3,6 @@ defmodule TesmoinWeb.PageControllerTest do
 
   test "GET /", %{conn: conn} do
     conn = get(conn, ~p"/")
-    assert redirected_to(conn) == ~p"/admin_users/log-in"
+    assert redirected_to(conn) == ~p"/setup"
   end
 end

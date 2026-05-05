@@ -1,4 +1,4 @@
-defmodule TesmoinWeb.AdminUserLive.Confirmation do
+defmodule TesmoinWeb.UserLive.Confirmation do
   use TesmoinWeb, :live_view
 
   alias Tesmoin.Accounts
@@ -20,16 +20,16 @@ defmodule TesmoinWeb.AdminUserLive.Confirmation do
 
         <div class="backoffice-card p-6 sm:p-8">
           <p class="mb-4 rounded-xl border border-primary-200 bg-secondary-soft/70 px-3 py-2 text-sm text-slate-700">
-            Logging in as <span class="font-semibold text-slate-900">{@admin_user.email}</span>.
+            Logging in as <span class="font-semibold text-slate-900">{@user.email}</span>.
           </p>
 
           <.form
-            :if={!@admin_user.confirmed_at}
+            :if={!@user.confirmed_at}
             for={@form}
             id="confirmation_form"
             phx-mounted={JS.focus_first()}
             phx-submit="submit"
-            action={~p"/admin_users/log-in?_action=confirmed"}
+            action={~p"/users/log-in?_action=confirmed"}
             phx-trigger-action={@trigger_submit}
             class="space-y-3"
           >
@@ -51,12 +51,12 @@ defmodule TesmoinWeb.AdminUserLive.Confirmation do
           </.form>
 
           <.form
-            :if={@admin_user.confirmed_at}
+            :if={@user.confirmed_at}
             for={@form}
             id="login_form"
             phx-submit="submit"
             phx-mounted={JS.focus_first()}
-            action={~p"/admin_users/log-in"}
+            action={~p"/users/log-in"}
             phx-trigger-action={@trigger_submit}
             class="space-y-3"
           >
@@ -90,13 +90,13 @@ defmodule TesmoinWeb.AdminUserLive.Confirmation do
 
   @impl true
   def mount(%{"token" => token} = params, _session, socket) do
-    if admin_user = Accounts.get_admin_user_by_magic_link_token(token) do
-      form = to_form(%{"token" => token}, as: "admin_user")
+    if user = Accounts.get_user_by_magic_link_token(token) do
+      form = to_form(%{"token" => token}, as: "user")
       reauth_mode = params["reauth"] == "true"
 
       {:ok,
        assign(socket,
-         admin_user: admin_user,
+         user: user,
          form: form,
          trigger_submit: false,
          reauth_mode: reauth_mode
@@ -105,12 +105,12 @@ defmodule TesmoinWeb.AdminUserLive.Confirmation do
       {:ok,
        socket
        |> put_flash(:error, "Magic link is invalid or it has expired.")
-       |> push_navigate(to: ~p"/admin_users/log-in")}
+       |> push_navigate(to: ~p"/users/log-in")}
     end
   end
 
   @impl true
-  def handle_event("submit", %{"admin_user" => params}, socket) do
-    {:noreply, assign(socket, form: to_form(params, as: "admin_user"), trigger_submit: true)}
+  def handle_event("submit", %{"user" => params}, socket) do
+    {:noreply, assign(socket, form: to_form(params, as: "user"), trigger_submit: true)}
   end
 end

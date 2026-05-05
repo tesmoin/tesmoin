@@ -16,18 +16,18 @@ defmodule Tesmoin.Accounts.Scope do
   growing application requirements.
   """
 
-  alias Tesmoin.Accounts.AdminUser
+  alias Tesmoin.Accounts.User
 
-  defstruct admin_user: nil
+  defstruct user: nil
 
   @doc """
-  Creates a scope for the given admin_user.
+  Creates a scope for the given user.
 
-  Returns nil if no admin_user is given.
+  Returns nil if no user is given.
   """
-  def for_admin_user(%AdminUser{} = admin_user) do
-    %__MODULE__{admin_user: admin_user}
+  def for_user(%User{} = user) do
+    %__MODULE__{user: user}
   end
 
-  def for_admin_user(nil), do: nil
+  def for_user(nil), do: nil
 end

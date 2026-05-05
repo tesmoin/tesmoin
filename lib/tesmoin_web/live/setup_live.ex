@@ -126,8 +126,8 @@ defmodule TesmoinWeb.SetupLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    if Accounts.admin_user_exists?() do
-      {:ok, push_navigate(socket, to: ~p"/admin_users/log-in")}
+    if Accounts.user_exists?() do
+      {:ok, push_navigate(socket, to: ~p"/users/log-in")}
     else
       client_ip =
         if connected?(socket) do
@@ -137,13 +137,13 @@ defmodule TesmoinWeb.SetupLive do
           end
         end
 
-      form = to_form(%{"email" => ""}, as: "admin_user")
+      form = to_form(%{"email" => ""}, as: "user")
       {:ok, assign(socket, form: form, client_ip: client_ip, setup_done: false, setup_email: nil)}
     end
   end
 
   @impl true
-  def handle_event("submit", %{"admin_user" => %{"email" => email}}, socket) do
+  def handle_event("submit", %{"user" => %{"email" => email}}, socket) do
     case RateLimiter.check_magic_link_request(socket.assigns.client_ip) do
       :rate_limited ->
         Logger.warning("Setup rate limited", client_ip: inspect(socket.assigns.client_ip))
@@ -152,11 +152,11 @@ defmodule TesmoinWeb.SetupLive do
          put_flash(socket, :error, "Too many requests. Please wait a minute before trying again.")}
 
       :ok ->
-        case Accounts.register_first_admin_user(%{email: email}) do
-          {:ok, admin_user} ->
-            {:ok, _} = Accounts.confirm_admin_user(admin_user)
+        case Accounts.register_first_user(%{email: email}) do
+          {:ok, user} ->
+            {:ok, _} = Accounts.confirm_user(user)
 
-            job_attrs = %{admin_user_id: admin_user.id}
+            job_attrs = %{user_id: user.id}
 
             case enqueue_magic_link_email(job_attrs) do
               :ok ->
@@ -180,7 +180,7 @@ defmodule TesmoinWeb.SetupLive do
 
           {:error, :already_setup} ->
             Logger.warning("Setup: concurrent request detected, admin already exists")
-            {:noreply, push_navigate(socket, to: ~p"/admin_users/log-in")}
+            {:noreply, push_navigate(socket, to: ~p"/users/log-in")}
 
           {:error, changeset} ->
             {:noreply, assign(socket, form: to_form(changeset, action: :insert))}

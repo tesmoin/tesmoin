@@ -1,4 +1,4 @@
-defmodule TesmoinWeb.AdminUserLive.Login do
+defmodule TesmoinWeb.UserLive.Login do
   use TesmoinWeb, :live_view
 
   require Logger
@@ -74,7 +74,7 @@ defmodule TesmoinWeb.AdminUserLive.Login do
             <.form
               for={@form}
               id="login_form_magic"
-              action={~p"/admin_users/log-in"}
+              action={~p"/users/log-in"}
               phx-submit="submit_magic"
               class="space-y-4"
             >
@@ -104,7 +104,7 @@ defmodule TesmoinWeb.AdminUserLive.Login do
   def mount(params, _session, socket) do
     login_email = params["email"]
     reauth_mode = params["reauth"] == "true"
-    form = to_form(%{"email" => login_email || ""}, as: "admin_user")
+    form = to_form(%{"email" => login_email || ""}, as: "user")
 
     client_ip =
       if connected?(socket) do
@@ -125,7 +125,7 @@ defmodule TesmoinWeb.AdminUserLive.Login do
   end
 
   @impl true
-  def handle_event("submit_magic", %{"admin_user" => %{"email" => email}}, socket) do
+  def handle_event("submit_magic", %{"user" => %{"email" => email}}, socket) do
     case RateLimiter.check_magic_link_request(socket.assigns.client_ip) do
       :rate_limited ->
         Logger.warning("Magic link rate limited",
@@ -135,13 +135,13 @@ defmodule TesmoinWeb.AdminUserLive.Login do
         {:noreply,
          socket
          |> put_flash(:error, "Too many requests. Please wait a minute before trying again.")
-         |> push_navigate(to: ~p"/admin_users/log-in")}
+         |> push_navigate(to: ~p"/users/log-in")}
 
       :ok ->
-        if admin_user = Accounts.get_admin_user_by_email(email) do
+        if user = Accounts.get_user_by_email(email) do
           Logger.info("Magic link requested", email: email)
 
-          job_attrs = %{admin_user_id: admin_user.id, reauth: socket.assigns.reauth_mode}
+          job_attrs = %{user_id: user.id, reauth: socket.assigns.reauth_mode}
 
           case enqueue_magic_link_email(job_attrs) do
             :ok ->

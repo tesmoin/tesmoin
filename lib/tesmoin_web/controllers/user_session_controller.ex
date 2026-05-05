@@ -1,11 +1,11 @@
-defmodule TesmoinWeb.AdminUserSessionController do
+defmodule TesmoinWeb.UserSessionController do
   use TesmoinWeb, :controller
 
   require Logger
 
   alias Tesmoin.Accounts
   alias Tesmoin.RateLimiter
-  alias TesmoinWeb.AdminUserAuth
+  alias TesmoinWeb.UserAuth
 
   def create(conn, %{"_action" => "confirmed"} = params) do
     do_create(conn, params)
@@ -16,23 +16,23 @@ defmodule TesmoinWeb.AdminUserSessionController do
   end
 
   # magic link login
-  defp do_create(conn, %{"admin_user" => %{"token" => token} = admin_user_params}) do
+  defp do_create(conn, %{"user" => %{"token" => token} = user_params}) do
     client_ip = conn.remote_ip
 
     case RateLimiter.check_token_redemption(client_ip) do
       :rate_limited ->
         conn
         |> put_flash(:error, "Too many requests. Please wait a minute before trying again.")
-        |> redirect(to: ~p"/admin_users/log-in")
+        |> redirect(to: ~p"/users/log-in")
 
       :ok ->
-        case Accounts.login_admin_user_by_magic_link(token) do
-          {:ok, {admin_user, tokens_to_disconnect}} ->
-            Logger.info("Magic link login succeeded", admin_user_id: admin_user.id)
-            AdminUserAuth.disconnect_sessions(tokens_to_disconnect)
+        case Accounts.login_user_by_magic_link(token) do
+          {:ok, {user, tokens_to_disconnect}} ->
+            Logger.info("Magic link login succeeded", user_id: user.id)
+            UserAuth.disconnect_sessions(tokens_to_disconnect)
 
             conn
-            |> AdminUserAuth.log_in_admin_user(admin_user, admin_user_params)
+            |> UserAuth.log_in_user(user, user_params)
 
           _ ->
             Logger.warning("Magic link token invalid or expired",
@@ -41,7 +41,7 @@ defmodule TesmoinWeb.AdminUserSessionController do
 
             conn
             |> put_flash(:error, "The link is invalid or it has expired.")
-            |> redirect(to: ~p"/admin_users/log-in")
+            |> redirect(to: ~p"/users/log-in")
         end
     end
   end
@@ -49,11 +49,11 @@ defmodule TesmoinWeb.AdminUserSessionController do
   defp do_create(conn, _params) do
     conn
     |> put_flash(:error, "The link is invalid or it has expired.")
-    |> redirect(to: ~p"/admin_users/log-in")
+    |> redirect(to: ~p"/users/log-in")
   end
 
   def delete(conn, _params) do
     conn
-    |> AdminUserAuth.log_out_admin_user()
+    |> UserAuth.log_out_user()
   end
 end

@@ -100,15 +100,26 @@ defmodule TesmoinWeb.Layouts do
               </form>
 
               <.link
-                href={~p"/admin_users/settings"}
+                href={~p"/users/settings"}
                 class="hidden h-9 items-center gap-1.5 rounded-full bg-white px-3 text-sm font-medium text-neutral-ink shadow-sm transition-colors hover:bg-[color-mix(in_oklab,var(--tes-secondary)_70%,white)] sm:inline-flex"
               >
                 <.icon name="hero-user-circle" class="size-4 text-slate-500" />
-                {@current_scope.admin_user.email}
+                {@current_scope.user.email}
+                <span class={[
+                  "rounded-full px-2 py-0.5 text-xs font-semibold",
+                  case @current_scope.user.role do
+                    "admin" -> "bg-violet-100 text-violet-700"
+                    "editor" -> "bg-blue-100 text-blue-700"
+                    "moderator" -> "bg-emerald-100 text-emerald-700"
+                    _ -> "bg-slate-100 text-slate-600"
+                  end
+                ]}>
+                  {String.capitalize(@current_scope.user.role || "")}
+                </span>
               </.link>
             <% else %>
               <%= unless @hide_public_auth_action do %>
-                <.link href={~p"/admin_users/log-in"} class="backoffice-button-primary">Log in</.link>
+                <.link href={~p"/users/log-in"} class="backoffice-button-primary">Log in</.link>
               <% end %>
             <% end %>
           </nav>

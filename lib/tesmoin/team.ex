@@ -2,7 +2,7 @@ defmodule Tesmoin.Team do
   @moduledoc """
   Context for managing team members and invitations.
 
-  Members are admin_users with a global role and optional store memberships.
+  Members are users with a global role and optional store memberships.
   Invitations allow new users to be onboarded via email.
   """
 
@@ -10,7 +10,7 @@ defmodule Tesmoin.Team do
 
   alias Tesmoin.Repo
   alias Tesmoin.Accounts
-  alias Tesmoin.Accounts.AdminUser
+  alias Tesmoin.Accounts.User
   alias Tesmoin.Stores.{Store, StoreMembership}
   alias Tesmoin.Team.MemberInvitation
 
@@ -18,32 +18,34 @@ defmodule Tesmoin.Team do
   # Members
   # ---------------------------------------------------------------------------
 
-  @doc "Returns all admin users along with their store memberships preloaded."
+  @doc "Returns all users ordered by role priority (admin, editor, moderator), then by join date."
   def list_members do
-    AdminUser
-    |> order_by([u], asc: u.inserted_at)
+    User
+    |> order_by([u], [
+      fragment("CASE u0.role WHEN 'admin' THEN 1 WHEN 'editor' THEN 2 WHEN 'moderator' THEN 3 ELSE 4 END"),
+      asc: u.inserted_at
+    ])
     |> Repo.all()
-    |> Repo.preload(store_memberships: :store)
   end
 
   @doc "Returns true when the given admin user has the global admin role."
-  def admin_member?(admin_user_id) when is_integer(admin_user_id) do
-    AdminUser
-    |> where([u], u.id == ^admin_user_id and u.role == "admin")
+  def admin_member?(user_id) when is_integer(user_id) do
+    User
+    |> where([u], u.id == ^user_id and u.role == "admin")
     |> Repo.exists?()
   end
 
   @doc "Changes a member global role."
-  def change_member_role(%AdminUser{} = actor, member_id, new_role)
+  def change_member_role(%User{} = actor, member_id, new_role)
       when is_integer(member_id) and is_binary(new_role) do
     cond do
       not admin_member?(actor.id) ->
         {:error, :forbidden}
 
-      new_role not in AdminUser.valid_roles() ->
+      new_role not in User.valid_roles() ->
         {:error, :invalid_role}
 
-      not Repo.exists?(from(u in AdminUser, where: u.id == ^member_id)) ->
+      not Repo.exists?(from(u in User, where: u.id == ^member_id)) ->
         {:error, :not_found}
 
       member_is_admin?(member_id) ->
@@ -51,7 +53,7 @@ defmodule Tesmoin.Team do
 
       true ->
         case Repo.update_all(
-               from(u in AdminUser, where: u.id == ^member_id),
+               from(u in User, where: u.id == ^member_id),
                set: [role: new_role]
              ) do
           {1, _} -> {:ok, :updated}
@@ -61,38 +63,38 @@ defmodule Tesmoin.Team do
   end
 
   @doc "Deletes an admin user unless they are the last admin user in the team."
-  def delete_admin_user(%AdminUser{} = admin_user) do
+  def delete_user(%User{} = user) do
     case Repo.transact(fn ->
-           if admin_user_count() <= 1 || last_admin?(admin_user) do
+           if user_count() <= 1 || last_admin?(user) do
              {:error, :last_admin}
            else
-             Repo.delete(admin_user)
+             Repo.delete(user)
            end
          end) do
-      {:ok, %AdminUser{} = deleted_user} -> {:ok, deleted_user}
-      {:ok, {:ok, %AdminUser{} = deleted_user}} -> {:ok, deleted_user}
+      {:ok, %User{} = deleted_user} -> {:ok, deleted_user}
+      {:ok, {:ok, %User{} = deleted_user}} -> {:ok, deleted_user}
       {:error, :last_admin} -> {:error, :last_admin}
       {:ok, {:error, :last_admin}} -> {:error, :last_admin}
       {:ok, {:error, reason}} -> {:error, reason}
     end
   end
 
-  defp admin_user_count do
-    AdminUser
+  defp user_count do
+    User
     |> Repo.aggregate(:count)
   end
 
-  defp last_admin?(%AdminUser{role: "admin"}) do
-    AdminUser
+  defp last_admin?(%User{role: "admin"}) do
+    User
     |> where([u], u.role == "admin")
     |> Repo.aggregate(:count) <= 1
   end
 
-  defp last_admin?(_admin_user), do: false
+  defp last_admin?(_user), do: false
 
-  defp member_is_admin?(admin_user_id) do
-    AdminUser
-    |> where([u], u.id == ^admin_user_id and u.role == "admin")
+  defp member_is_admin?(user_id) do
+    User
+    |> where([u], u.id == ^user_id and u.role == "admin")
     |> Repo.exists?()
   end
 
@@ -161,7 +163,7 @@ defmodule Tesmoin.Team do
 
   Returns `{:ok, invitation}` or `{:error, changeset}`.
   """
-  def create_invitation(attrs, %AdminUser{} = invited_by) do
+  def create_invitation(attrs, %User{} = invited_by) do
     changeset =
       %MemberInvitation{invited_by_id: invited_by.id}
       |> MemberInvitation.changeset(attrs)
@@ -195,10 +197,10 @@ defmodule Tesmoin.Team do
   @doc """
   Accepts an invitation for the given email address.
 
-  - Finds or creates an AdminUser for the invitation's email.
+  - Finds or creates an User for the invitation's email.
   - Creates StoreMembership records for all existing stores.
   - Marks the invitation as accepted.
-  - Returns `{:ok, admin_user}` so the caller can send a magic link.
+  - Returns `{:ok, user}` so the caller can send a magic link.
 
   Returns `{:error, reason}` when the token is invalid, expired, or already used.
   """
@@ -214,18 +216,18 @@ defmodule Tesmoin.Team do
 
       true ->
         Repo.transact(fn ->
-          admin_user = find_or_create_admin_user!(invitation.email, invitation.role)
-          create_memberships_for_all_stores!(admin_user)
+          user = find_or_create_user!(invitation.email, invitation.role)
+          create_memberships_for_all_stores!(user)
           mark_accepted!(invitation)
-          {:ok, admin_user}
+          {:ok, user}
         end)
     end
   end
 
-  defp find_or_create_admin_user!(email, role) do
-    case Accounts.get_admin_user_by_email(email) do
+  defp find_or_create_user!(email, role) do
+    case Accounts.get_user_by_email(email) do
       nil ->
-        {:ok, user} = Accounts.register_admin_user(%{email: email, role: role})
+        {:ok, user} = Accounts.register_user(%{email: email, role: role})
         user
 
       user ->
@@ -233,20 +235,20 @@ defmodule Tesmoin.Team do
           user
         else
           user
-          |> AdminUser.role_changeset(%{role: role})
+          |> User.role_changeset(%{role: role})
           |> Repo.update!()
         end
     end
   end
 
-  defp create_memberships_for_all_stores!(admin_user) do
+  defp create_memberships_for_all_stores!(user) do
     Store
     |> select([s], s.id)
     |> Repo.all()
     |> Enum.each(fn store_id ->
       %StoreMembership{}
       |> StoreMembership.changeset(%{
-        admin_user_id: admin_user.id,
+        user_id: user.id,
         store_id: store_id
       })
       |> Repo.insert(on_conflict: :nothing)
@@ -267,7 +269,7 @@ defmodule Tesmoin.Team do
   def list_store_memberships(store_id) do
     StoreMembership
     |> where([m], m.store_id == ^store_id)
-    |> preload(:admin_user)
+    |> preload(:user)
     |> Repo.all()
   end
 end

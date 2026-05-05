@@ -1,11 +1,11 @@
-defmodule Tesmoin.Accounts.AdminUser do
+defmodule Tesmoin.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
 
   alias Tesmoin.Stores.{Store, StoreMembership}
   @valid_roles ~w(admin editor moderator)
 
-  schema "admin_users" do
+  schema "users" do
     field :email, :string
     field :role, :string, default: "moderator"
     field :password, :string, virtual: true, redact: true
@@ -20,7 +20,7 @@ defmodule Tesmoin.Accounts.AdminUser do
   end
 
   @doc """
-  A admin_user changeset for registering or changing the email.
+  A user changeset for registering or changing the email.
 
   It requires the email to change otherwise an error is added.
 
@@ -30,8 +30,8 @@ defmodule Tesmoin.Accounts.AdminUser do
       uniqueness of the email, useful when displaying live validations.
       Defaults to `true`.
   """
-  def email_changeset(admin_user, attrs, opts \\ []) do
-    admin_user
+  def email_changeset(user, attrs, opts \\ []) do
+    user
     |> cast(attrs, [:email])
     |> validate_email(opts)
   end
@@ -64,7 +64,7 @@ defmodule Tesmoin.Accounts.AdminUser do
   end
 
   @doc """
-  A admin_user changeset for changing the password.
+  A user changeset for changing the password.
 
   It is important to validate the length of the password, as long passwords may
   be very expensive to hash for certain algorithms.
@@ -78,8 +78,8 @@ defmodule Tesmoin.Accounts.AdminUser do
       validations on a LiveView form), this option can be set to `false`.
       Defaults to `true`.
   """
-  def password_changeset(admin_user, attrs, opts \\ []) do
-    admin_user
+  def password_changeset(user, attrs, opts \\ []) do
+    user
     |> cast(attrs, [:password])
     |> validate_confirmation(:password, message: "does not match password")
     |> validate_password(opts)
@@ -114,18 +114,18 @@ defmodule Tesmoin.Accounts.AdminUser do
   @doc """
   Confirms the account by setting `confirmed_at`.
   """
-  def confirm_changeset(admin_user) do
+  def confirm_changeset(user) do
     now = DateTime.utc_now(:second)
-    change(admin_user, confirmed_at: now)
+    change(user, confirmed_at: now)
   end
 
   @doc """
   Verifies the password.
 
-  If there is no admin_user or the admin_user doesn't have a password, we call
+  If there is no user or the user doesn't have a password, we call
   `Pbkdf2.no_user_verify/0` to avoid timing attacks.
   """
-  def valid_password?(%Tesmoin.Accounts.AdminUser{hashed_password: hashed_password}, password)
+  def valid_password?(%Tesmoin.Accounts.User{hashed_password: hashed_password}, password)
       when is_binary(hashed_password) and byte_size(password) > 0 do
     Pbkdf2.verify_pass(password, hashed_password)
   end
@@ -135,15 +135,15 @@ defmodule Tesmoin.Accounts.AdminUser do
     false
   end
 
-  def registration_changeset(admin_user, attrs) do
-    admin_user
+  def registration_changeset(user, attrs) do
+    user
     |> cast(attrs, [:email, :role])
     |> validate_email([])
     |> validate_role()
   end
 
-  def role_changeset(admin_user, attrs) do
-    admin_user
+  def role_changeset(user, attrs) do
+    user
     |> cast(attrs, [:role])
     |> validate_required([:role])
     |> validate_role()

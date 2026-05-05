@@ -1,7 +1,7 @@
-defmodule TesmoinWeb.AdminUserLive.Settings do
+defmodule TesmoinWeb.UserLive.Settings do
   use TesmoinWeb, :live_view
 
-  on_mount {TesmoinWeb.AdminUserAuth, :require_sudo_mode}
+  on_mount {TesmoinWeb.UserAuth, :require_sudo_mode}
 
   alias Tesmoin.Accounts
   alias Tesmoin.Team
@@ -59,7 +59,7 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
           <p class="text-sm text-slate-500 mb-5">Sign out of your account on this device.</p>
 
           <.link
-            href={~p"/admin_users/log-out"}
+            href={~p"/users/log-out"}
             method="delete"
             class="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 ring-1 ring-inset ring-red-200 hover:bg-red-100 transition-colors"
           >
@@ -141,25 +141,25 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
   @impl true
   def mount(%{"token" => token}, _session, socket) do
     socket =
-      case Accounts.update_admin_user_email(socket.assigns.current_scope.admin_user, token) do
-        {:ok, _admin_user} ->
+      case Accounts.update_user_email(socket.assigns.current_scope.user, token) do
+        {:ok, _user} ->
           socket
 
         {:error, _} ->
           put_flash(socket, :error, "Email change link is invalid or it has expired.")
       end
 
-    {:ok, push_navigate(socket, to: ~p"/admin_users/settings")}
+    {:ok, push_navigate(socket, to: ~p"/users/settings")}
   end
 
   def mount(_params, _session, socket) do
-    admin_user = socket.assigns.current_scope.admin_user
-    email_changeset = Accounts.change_admin_user_email(admin_user, %{}, validate_unique: false)
+    user = socket.assigns.current_scope.user
+    email_changeset = Accounts.change_user_email(user, %{}, validate_unique: false)
 
     socket =
       socket
-      |> assign(:current_email, admin_user.email)
-      |> assign(:email_form, to_form(email_changeset))
+      |> assign(:current_email, user.email)
+      |> assign(:email_form, to_form(email_changeset, as: :user))
       |> assign(:email_sent, false)
       |> assign(:show_delete_modal, false)
       |> assign(:delete_error, nil)
@@ -169,13 +169,13 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
 
   @impl true
   def handle_event("validate_email", params, socket) do
-    %{"admin_user" => admin_user_params} = params
+    %{"user" => user_params} = normalize_user_params(params)
 
     email_form =
-      socket.assigns.current_scope.admin_user
-      |> Accounts.change_admin_user_email(admin_user_params, validate_unique: false)
+      socket.assigns.current_scope.user
+      |> Accounts.change_user_email(user_params, validate_unique: false)
       |> Map.put(:action, :validate)
-      |> to_form()
+      |> to_form(as: :user)
 
     {:noreply, assign(socket, email_form: email_form)}
   end
@@ -189,32 +189,32 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
   end
 
   def handle_event("update_email", params, socket) do
-    %{"admin_user" => admin_user_params} = params
-    admin_user = socket.assigns.current_scope.admin_user
-    true = Accounts.sudo_mode?(admin_user)
+    %{"user" => user_params} = normalize_user_params(params)
+    user = socket.assigns.current_scope.user
+    true = Accounts.sudo_mode?(user)
 
-    case Accounts.change_admin_user_email(admin_user, admin_user_params) do
+    case Accounts.change_user_email(user, user_params) do
       %{valid?: true} = changeset ->
-        Accounts.deliver_admin_user_update_email_instructions(
+        Accounts.deliver_user_update_email_instructions(
           Ecto.Changeset.apply_action!(changeset, :insert),
-          admin_user.email,
-          &url(~p"/admin_users/settings/confirm-email/#{&1}")
+          user.email,
+          &url(~p"/users/settings/confirm-email/#{&1}")
         )
 
         Process.send_after(self(), :clear_email_sent, 2000)
         {:noreply, assign(socket, :email_sent, true)}
 
       changeset ->
-        {:noreply, assign(socket, :email_form, to_form(changeset, action: :insert))}
+        {:noreply, assign(socket, :email_form, to_form(changeset, as: :user, action: :insert))}
     end
   end
 
   def handle_event("delete-account", _params, socket) do
-    admin_user = socket.assigns.current_scope.admin_user
+    user = socket.assigns.current_scope.user
 
-    case Team.delete_admin_user(admin_user) do
+    case Team.delete_user(user) do
       {:ok, _deleted_user} ->
-        {:noreply, redirect(socket, to: ~p"/admin_users/log-in")}
+        {:noreply, redirect(socket, to: ~p"/users/log-in")}
 
       {:error, :last_admin} ->
         {:noreply,
@@ -230,4 +230,6 @@ defmodule TesmoinWeb.AdminUserLive.Settings do
   def handle_info(:clear_email_sent, socket) do
     {:noreply, assign(socket, :email_sent, false)}
   end
+
+  defp normalize_user_params(%{"user" => _} = params), do: params
 end

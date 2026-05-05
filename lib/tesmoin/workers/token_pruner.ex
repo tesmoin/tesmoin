@@ -14,14 +14,14 @@ defmodule Tesmoin.Workers.TokenPruner do
 
   import Ecto.Query
 
-  alias Tesmoin.Accounts.AdminUserToken
+  alias Tesmoin.Accounts.UserToken
   alias Tesmoin.Repo
 
   @impl Oban.Worker
   def perform(%Oban.Job{}) do
     {count, _} =
       Repo.delete_all(
-        from t in AdminUserToken,
+        from t in UserToken,
           where:
             (t.context == "login" and t.inserted_at < ago(15, "minute")) or
               (t.context == "session" and t.inserted_at < ago(14, "day")) or

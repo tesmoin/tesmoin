@@ -1,8 +1,8 @@
-defmodule Tesmoin.Accounts.AdminUserNotifier do
+defmodule Tesmoin.Accounts.UserNotifier do
   import Swoosh.Email
 
   alias Tesmoin.Mailer
-  alias Tesmoin.Accounts.AdminUser
+  alias Tesmoin.Accounts.User
 
   # Delivers the email using the application mailer.
   defp deliver(recipient, subject, body) do
@@ -19,14 +19,14 @@ defmodule Tesmoin.Accounts.AdminUserNotifier do
   end
 
   @doc """
-  Deliver instructions to update a admin_user email.
+  Deliver instructions to update a user email.
   """
-  def deliver_update_email_instructions(admin_user, url) do
-    deliver(admin_user.email, "Update email instructions", """
+  def deliver_update_email_instructions(user, url) do
+    deliver(user.email, "Update email instructions", """
 
     ==============================
 
-    Hi #{admin_user.email},
+    Hi #{user.email},
 
     You can change your email by visiting the URL below:
 
@@ -41,19 +41,19 @@ defmodule Tesmoin.Accounts.AdminUserNotifier do
   @doc """
   Deliver instructions to log in with a magic link.
   """
-  def deliver_login_instructions(admin_user, url) do
-    case admin_user do
-      %AdminUser{confirmed_at: nil} -> deliver_confirmation_instructions(admin_user, url)
-      _ -> deliver_magic_link_instructions(admin_user, url)
+  def deliver_login_instructions(user, url) do
+    case user do
+      %User{confirmed_at: nil} -> deliver_confirmation_instructions(user, url)
+      _ -> deliver_magic_link_instructions(user, url)
     end
   end
 
-  defp deliver_magic_link_instructions(admin_user, url) do
-    deliver(admin_user.email, "Log in instructions", """
+  defp deliver_magic_link_instructions(user, url) do
+    deliver(user.email, "Log in instructions", """
 
     ==============================
 
-    Hi #{admin_user.email},
+    Hi #{user.email},
 
     You can log into your account by visiting the URL below:
 
@@ -65,12 +65,12 @@ defmodule Tesmoin.Accounts.AdminUserNotifier do
     """)
   end
 
-  defp deliver_confirmation_instructions(admin_user, url) do
-    deliver(admin_user.email, "Confirmation instructions", """
+  defp deliver_confirmation_instructions(user, url) do
+    deliver(user.email, "Confirmation instructions", """
 
     ==============================
 
-    Hi #{admin_user.email},
+    Hi #{user.email},
 
     You can confirm your account by visiting the URL below:
 

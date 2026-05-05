@@ -1,4 +1,4 @@
-defmodule TesmoinWeb.AdminUserAuth do
+defmodule TesmoinWeb.UserAuth do
   use TesmoinWeb, :verified_routes
 
   import Plug.Conn
@@ -8,9 +8,9 @@ defmodule TesmoinWeb.AdminUserAuth do
   alias Tesmoin.Accounts.Scope
 
   # Make the remember me cookie valid for 14 days. This should match
-  # the session validity setting in AdminUserToken.
+  # the session validity setting in UserToken.
   @max_cookie_age_in_days 14
-  @remember_me_cookie "_tesmoin_web_admin_user_remember_me"
+  @remember_me_cookie "_tesmoin_web_user_remember_me"
   @remember_me_options [
     sign: true,
     max_age: @max_cookie_age_in_days * 24 * 60 * 60,
@@ -29,27 +29,27 @@ defmodule TesmoinWeb.AdminUserAuth do
   @session_reissue_age_in_days 7
 
   @doc """
-  Logs the admin_user in.
+  Logs the user in.
 
-  Redirects to the session's `:admin_user_return_to` path
+  Redirects to the session's `:user_return_to` path
   or falls back to the `signed_in_path/1`.
   """
-  def log_in_admin_user(conn, admin_user, params \\ %{}) do
-    admin_user_return_to = get_session(conn, :admin_user_return_to)
+  def log_in_user(conn, user, params \\ %{}) do
+    user_return_to = get_session(conn, :user_return_to)
 
     conn
-    |> create_or_extend_session(admin_user, params)
-    |> redirect(to: admin_user_return_to || signed_in_path(conn))
+    |> create_or_extend_session(user, params)
+    |> redirect(to: user_return_to || signed_in_path(conn))
   end
 
   @doc """
-  Logs the admin_user out.
+  Logs the user out.
 
   It clears all session data for safety. See renew_session.
   """
-  def log_out_admin_user(conn) do
-    admin_user_token = get_session(conn, :admin_user_token)
-    admin_user_token && Accounts.delete_admin_user_session_token(admin_user_token)
+  def log_out_user(conn) do
+    user_token = get_session(conn, :user_token)
+    user_token && Accounts.delete_user_session_token(user_token)
 
     if live_socket_id = get_session(conn, :live_socket_id) do
       TesmoinWeb.Endpoint.broadcast(live_socket_id, "disconnect", %{})
@@ -62,29 +62,29 @@ defmodule TesmoinWeb.AdminUserAuth do
   end
 
   @doc """
-  Authenticates the admin_user by looking into the session and remember me token.
+  Authenticates the user by looking into the session and remember me token.
 
   Will reissue the session token if it is older than the configured age.
   """
-  def fetch_current_scope_for_admin_user(conn, _opts) do
-    with {token, conn} <- ensure_admin_user_token(conn),
-         {admin_user, token_inserted_at} <- Accounts.get_admin_user_by_session_token(token) do
+  def fetch_current_scope_for_user(conn, _opts) do
+    with {token, conn} <- ensure_user_token(conn),
+         {user, token_inserted_at} <- Accounts.get_user_by_session_token(token) do
       conn
-      |> assign(:current_scope, Scope.for_admin_user(admin_user))
-      |> maybe_reissue_admin_user_session_token(admin_user, token_inserted_at)
+      |> assign(:current_scope, Scope.for_user(user))
+      |> maybe_reissue_user_session_token(user, token_inserted_at)
     else
-      nil -> assign(conn, :current_scope, Scope.for_admin_user(nil))
+      nil -> assign(conn, :current_scope, Scope.for_user(nil))
     end
   end
 
-  defp ensure_admin_user_token(conn) do
-    if token = get_session(conn, :admin_user_token) do
+  defp ensure_user_token(conn) do
+    if token = get_session(conn, :user_token) do
       {token, conn}
     else
       conn = fetch_cookies(conn, signed: [@remember_me_cookie])
 
       if token = conn.cookies[@remember_me_cookie] do
-        {token, conn |> put_token_in_session(token) |> put_session(:admin_user_remember_me, true)}
+        {token, conn |> put_token_in_session(token) |> put_session(:user_remember_me, true)}
       else
         nil
       end
@@ -92,11 +92,11 @@ defmodule TesmoinWeb.AdminUserAuth do
   end
 
   # Reissue the session token if it is older than the configured reissue age.
-  defp maybe_reissue_admin_user_session_token(conn, admin_user, token_inserted_at) do
+  defp maybe_reissue_user_session_token(conn, user, token_inserted_at) do
     token_age = DateTime.diff(DateTime.utc_now(:second), token_inserted_at, :day)
 
     if token_age >= @session_reissue_age_in_days do
-      create_or_extend_session(conn, admin_user, %{})
+      create_or_extend_session(conn, user, %{})
     else
       conn
     end
@@ -110,20 +110,20 @@ defmodule TesmoinWeb.AdminUserAuth do
   # When the session is created, rather than extended, the renew_session
   # function will clear the session to avoid fixation attacks. See the
   # renew_session function to customize this behaviour.
-  defp create_or_extend_session(conn, admin_user, params) do
-    token = Accounts.generate_admin_user_session_token(admin_user)
-    remember_me = get_session(conn, :admin_user_remember_me)
+  defp create_or_extend_session(conn, user, params) do
+    token = Accounts.generate_user_session_token(user)
+    remember_me = get_session(conn, :user_remember_me)
 
     conn
-    |> renew_session(admin_user)
+    |> renew_session(user)
     |> put_token_in_session(token)
     |> maybe_write_remember_me_cookie(token, params, remember_me)
   end
 
-  # Do not renew session if the admin_user is already logged in
+  # Do not renew session if the user is already logged in
   # to prevent CSRF errors or data being lost in tabs that are still open
-  defp renew_session(conn, admin_user)
-       when conn.assigns.current_scope.admin_user.id == admin_user.id do
+  defp renew_session(conn, user)
+       when conn.assigns.current_scope.user.id == user.id do
     conn
   end
 
@@ -133,7 +133,7 @@ defmodule TesmoinWeb.AdminUserAuth do
   # you must explicitly fetch the session data before clearing
   # and then immediately set it after clearing, for example:
   #
-  #     defp renew_session(conn, _admin_user) do
+  #     defp renew_session(conn, _user) do
   #       delete_csrf_token()
   #       preferred_locale = get_session(conn, :preferred_locale)
   #
@@ -143,7 +143,7 @@ defmodule TesmoinWeb.AdminUserAuth do
   #       |> put_session(:preferred_locale, preferred_locale)
   #     end
   #
-  defp renew_session(conn, _admin_user) do
+  defp renew_session(conn, _user) do
     delete_csrf_token()
 
     conn
@@ -161,14 +161,14 @@ defmodule TesmoinWeb.AdminUserAuth do
 
   defp write_remember_me_cookie(conn, token) do
     conn
-    |> put_session(:admin_user_remember_me, true)
+    |> put_session(:user_remember_me, true)
     |> put_resp_cookie(@remember_me_cookie, token, @remember_me_options)
   end
 
   defp put_token_in_session(conn, token) do
     conn
-    |> put_session(:admin_user_token, token)
-    |> put_session(:live_socket_id, admin_user_session_topic(token))
+    |> put_session(:user_token, token)
+    |> put_session(:live_socket_id, user_session_topic(token))
   end
 
   @doc """
@@ -176,11 +176,11 @@ defmodule TesmoinWeb.AdminUserAuth do
   """
   def disconnect_sessions(tokens) do
     Enum.each(tokens, fn %{token: token} ->
-      TesmoinWeb.Endpoint.broadcast(admin_user_session_topic(token), "disconnect", %{})
+      TesmoinWeb.Endpoint.broadcast(user_session_topic(token), "disconnect", %{})
     end)
   end
 
-  defp admin_user_session_topic(token), do: "admin_users_sessions:#{Base.url_encode64(token)}"
+  defp user_session_topic(token), do: "users_sessions:#{Base.url_encode64(token)}"
 
   @doc """
   Handles mounting and authenticating the current_scope in LiveViews.
@@ -188,13 +188,13 @@ defmodule TesmoinWeb.AdminUserAuth do
   ## `on_mount` arguments
 
     * `:mount_current_scope` - Assigns current_scope
-      to socket assigns based on admin_user_token, or nil if
-      there's no admin_user_token or no matching admin_user.
+      to socket assigns based on user_token, or nil if
+      there's no user_token or no matching user.
 
-    * `:require_authenticated` - Authenticates the admin_user from the session,
+    * `:require_authenticated` - Authenticates the user from the session,
       and assigns the current_scope to socket assigns based
-      on admin_user_token.
-      Redirects to login page if there's no logged admin_user.
+      on user_token.
+      Redirects to login page if there's no logged user.
 
   ## Examples
 
@@ -204,13 +204,13 @@ defmodule TesmoinWeb.AdminUserAuth do
       defmodule TesmoinWeb.PageLive do
         use TesmoinWeb, :live_view
 
-        on_mount {TesmoinWeb.AdminUserAuth, :mount_current_scope}
+        on_mount {TesmoinWeb.UserAuth, :mount_current_scope}
         ...
       end
 
   Or use the `live_session` of your router to invoke the on_mount callback:
 
-      live_session :authenticated, on_mount: [{TesmoinWeb.AdminUserAuth, :require_authenticated}] do
+      live_session :authenticated, on_mount: [{TesmoinWeb.UserAuth, :require_authenticated}] do
         live "/profile", ProfileLive, :index
       end
   """
@@ -218,10 +218,10 @@ defmodule TesmoinWeb.AdminUserAuth do
     {:cont, mount_current_scope(socket, session)}
   end
 
-  def on_mount(:redirect_if_admin_user_is_authenticated, params, session, socket) do
+  def on_mount(:redirect_if_user_is_authenticated, params, session, socket) do
     socket = mount_current_scope(socket, session)
 
-    if socket.assigns.current_scope && socket.assigns.current_scope.admin_user &&
+    if socket.assigns.current_scope && socket.assigns.current_scope.user &&
          params["reauth"] != "true" do
       socket =
         Phoenix.LiveView.redirect(socket,
@@ -237,12 +237,12 @@ defmodule TesmoinWeb.AdminUserAuth do
   def on_mount(:require_authenticated, _params, session, socket) do
     socket = mount_current_scope(socket, session)
 
-    if socket.assigns.current_scope && socket.assigns.current_scope.admin_user do
+    if socket.assigns.current_scope && socket.assigns.current_scope.user do
       {:cont, mount_store_context(socket, session)}
     else
       socket =
         socket
-        |> Phoenix.LiveView.redirect(to: ~p"/admin_users/log-in")
+        |> Phoenix.LiveView.redirect(to: ~p"/users/log-in")
 
       {:halt, socket}
     end
@@ -251,12 +251,12 @@ defmodule TesmoinWeb.AdminUserAuth do
   def on_mount(:require_sudo_mode, _params, session, socket) do
     socket = mount_current_scope(socket, session)
 
-    if Accounts.sudo_mode?(socket.assigns.current_scope.admin_user, -10) do
+    if Accounts.sudo_mode?(socket.assigns.current_scope.user, -10) do
       {:cont, socket}
     else
       socket =
         socket
-        |> Phoenix.LiveView.redirect(to: ~p"/admin_users/log-in?reauth=true")
+        |> Phoenix.LiveView.redirect(to: ~p"/users/log-in?reauth=true")
 
       {:halt, socket}
     end
@@ -264,24 +264,24 @@ defmodule TesmoinWeb.AdminUserAuth do
 
   defp mount_current_scope(socket, session) do
     Phoenix.Component.assign_new(socket, :current_scope, fn ->
-      {admin_user, _} =
-        if admin_user_token = session["admin_user_token"] do
-          Accounts.get_admin_user_by_session_token(admin_user_token)
+      {user, _} =
+        if user_token = session["user_token"] do
+          Accounts.get_user_by_session_token(user_token)
         end || {nil, nil}
 
-      Scope.for_admin_user(admin_user)
+      Scope.for_user(user)
     end)
   end
 
   defp mount_store_context(socket, session) do
-    admin_user_id = socket.assigns.current_scope.admin_user.id
+    user_id = socket.assigns.current_scope.user.id
 
     socket
     |> Phoenix.Component.assign_new(:stores, fn ->
-      Tesmoin.Stores.list_stores_for_admin_user(admin_user_id)
+      Tesmoin.Stores.list_stores_for_user(user_id)
     end)
     |> Phoenix.Component.assign_new(:current_store, fn %{stores: stores} ->
-      persisted_store_id = socket.assigns.current_scope.admin_user.current_store_id
+      persisted_store_id = socket.assigns.current_scope.user.current_store_id
       session_store_id = session["current_store_id"]
 
       current_store_from_session =
@@ -295,30 +295,30 @@ defmodule TesmoinWeb.AdminUserAuth do
   end
 
   @doc "Returns the path to redirect to after log in."
-  # the admin_user was already logged in, redirect to settings
+  # the user was already logged in, redirect to settings
   def signed_in_path(%Plug.Conn{
-        assigns: %{current_scope: %Scope{admin_user: %Accounts.AdminUser{}}}
+        assigns: %{current_scope: %Scope{user: %Accounts.User{}}}
       }) do
-    ~p"/admin_users/settings"
+    ~p"/users/settings"
   end
 
   def signed_in_path(_), do: ~p"/"
 
-  defp signed_in_path_for_scope(%Scope{admin_user: %Accounts.AdminUser{}}),
-    do: ~p"/admin_users/settings"
+  defp signed_in_path_for_scope(%Scope{user: %Accounts.User{}}),
+    do: ~p"/users/settings"
 
   defp signed_in_path_for_scope(_), do: ~p"/"
 
   @doc """
-  Plug for routes that require the admin_user to be authenticated.
+  Plug for routes that require the user to be authenticated.
   """
-  def require_authenticated_admin_user(conn, _opts) do
-    if conn.assigns.current_scope && conn.assigns.current_scope.admin_user do
+  def require_authenticated_user(conn, _opts) do
+    if conn.assigns.current_scope && conn.assigns.current_scope.user do
       conn
     else
       conn
       |> maybe_store_return_to()
-      |> redirect(to: ~p"/admin_users/log-in")
+      |> redirect(to: ~p"/users/log-in")
       |> halt()
     end
   end
@@ -326,10 +326,10 @@ defmodule TesmoinWeb.AdminUserAuth do
   @doc """
   Redirects away from auth-entry pages when an admin user is already authenticated.
   """
-  def redirect_if_admin_user_is_authenticated(conn, _opts) do
+  def redirect_if_user_is_authenticated(conn, _opts) do
     conn = fetch_query_params(conn)
 
-    if conn.assigns.current_scope && conn.assigns.current_scope.admin_user &&
+    if conn.assigns.current_scope && conn.assigns.current_scope.user &&
          conn.params["reauth"] != "true" do
       conn
       |> redirect(to: signed_in_path(conn))
@@ -340,24 +340,24 @@ defmodule TesmoinWeb.AdminUserAuth do
   end
 
   defp maybe_store_return_to(%{method: "GET"} = conn) do
-    put_session(conn, :admin_user_return_to, current_path(conn))
+    put_session(conn, :user_return_to, current_path(conn))
   end
 
   defp maybe_store_return_to(conn), do: conn
 
   @doc """
   Redirects to /setup when no admin user exists yet.
-  Exempt paths: /setup, /admin_users/log-in*, /admin_users/log-out, /dev/mailbox*, /dev/dashboard*.
+  Exempt paths: /setup, /users/log-in*, /users/log-out, /users/log-in*, /users/log-out, /dev/mailbox*, /dev/dashboard*.
   """
   def redirect_to_setup_if_needed(conn, _opts) do
-    if setup_path_exempt?(conn.request_path) or Accounts.admin_user_exists?() do
+    if setup_path_exempt?(conn.request_path) or Accounts.user_exists?() do
       conn
     else
       # No admin exists — if the user is authenticated (e.g. a non-admin whose
       # admin was deleted), log them out first so they don't get caught in a
       # redirect loop between /setup and authenticated-only routes.
-      admin_user_token = get_session(conn, :admin_user_token)
-      admin_user_token && Accounts.delete_admin_user_session_token(admin_user_token)
+      user_token = get_session(conn, :user_token)
+      user_token && Accounts.delete_user_session_token(user_token)
 
       conn
       |> renew_session(nil)
@@ -369,8 +369,10 @@ defmodule TesmoinWeb.AdminUserAuth do
 
   defp setup_path_exempt?(path) do
     path == "/setup" or
-      String.starts_with?(path, "/admin_users/log-in") or
-      path == "/admin_users/log-out" or
+      String.starts_with?(path, "/users/log-in") or
+      path == "/users/log-out" or
+      String.starts_with?(path, "/users/log-in") or
+      path == "/users/log-out" or
       String.starts_with?(path, "/dev/mailbox") or
       String.starts_with?(path, "/dev/dashboard")
   end

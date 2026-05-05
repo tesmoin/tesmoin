@@ -125,6 +125,18 @@ defmodule Tesmoin.Accounts do
   def sudo_mode?(_admin_user, _minutes), do: false
 
   @doc """
+  Persists the admin user's currently selected store.
+
+  This is used as a fallback across browser sessions when there is no
+  `:current_store_id` in the session.
+  """
+  def set_current_store(%AdminUser{} = admin_user, store_id) when is_integer(store_id) do
+    admin_user
+    |> Ecto.Changeset.change(current_store_id: store_id)
+    |> Repo.update()
+  end
+
+  @doc """
   Returns an `%Ecto.Changeset{}` for changing the admin_user email.
 
   See `Tesmoin.Accounts.AdminUser.email_changeset/3` for a list of supported options.

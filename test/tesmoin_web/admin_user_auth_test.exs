@@ -4,6 +4,7 @@ defmodule TesmoinWeb.AdminUserAuthTest do
   alias Phoenix.LiveView
   alias Tesmoin.Accounts
   alias Tesmoin.Accounts.Scope
+  alias Tesmoin.Stores
   alias TesmoinWeb.AdminUserAuth
 
   import Tesmoin.AccountsFixtures
@@ -331,6 +332,37 @@ defmodule TesmoinWeb.AdminUserAuthTest do
         AdminUserAuth.on_mount(:require_authenticated, %{}, session, socket)
 
       assert updated_socket.assigns.current_scope == nil
+    end
+
+    test "uses persisted current store when session current_store_id is missing", %{
+      conn: conn,
+      admin_user: admin_user
+    } do
+      scope = Scope.for_admin_user(admin_user)
+
+      {:ok, _store1} =
+        Stores.create_store(scope, %{
+          "name" => "Store One",
+          "slug" => "store-one-#{System.unique_integer([:positive])}",
+          "status" => "live"
+        })
+
+      {:ok, store2} =
+        Stores.create_store(scope, %{
+          "name" => "Store Two",
+          "slug" => "store-two-#{System.unique_integer([:positive])}",
+          "status" => "live"
+        })
+
+      {:ok, _updated_admin_user} = Accounts.set_current_store(admin_user, store2.id)
+
+      admin_user_token = Accounts.generate_admin_user_session_token(admin_user)
+      session = conn |> put_session(:admin_user_token, admin_user_token) |> get_session()
+
+      {:cont, updated_socket} =
+        AdminUserAuth.on_mount(:require_authenticated, %{}, session, %LiveView.Socket{})
+
+      assert updated_socket.assigns.current_store.id == store2.id
     end
   end
 

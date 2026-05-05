@@ -94,7 +94,7 @@ defmodule TesmoinWeb.StoreLive.Edit do
               </div>
 
               <p class="mt-1 text-xs text-slate-400">
-                Use this key to initialise the embeddable review widget on your storefront.
+                Use this key to initialise the embeddable widgets on your storefront.
               </p>
             </div>
 

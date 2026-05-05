@@ -1,5 +1,11 @@
 import Config
 
+debug_errors? =
+  case System.get_env("PHX_DEBUG_ERRORS", "true") |> String.downcase() do
+    value when value in ["1", "true", "yes", "on"] -> true
+    _ -> false
+  end
+
 # Configure your database
 config :tesmoin, Tesmoin.Repo,
   url: System.get_env("DATABASE_URL") || "ecto://postgres:postgres@localhost/tesmoin_dev",
@@ -19,7 +25,7 @@ config :tesmoin, TesmoinWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}],
   check_origin: false,
   code_reloader: true,
-  debug_errors: true,
+  debug_errors: debug_errors?,
   secret_key_base:
     System.get_env("SECRET_KEY_BASE") ||
       "7xvbFw+vwuDQ7f+OKxvjvgwSHc8eaVSZcuZ6uQCnu77NI/mtlgnepTrghGAqrYIu",

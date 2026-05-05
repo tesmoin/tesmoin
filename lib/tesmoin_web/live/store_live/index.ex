@@ -21,7 +21,7 @@ defmodule TesmoinWeb.StoreLive.Index do
             <h1 class="text-2xl font-bold text-slate-800">Stores</h1>
 
             <p class="mt-1 text-sm text-slate-500">
-              Each store represents an independent ecommerce site with its own dataset.
+              Each store represents an independent ecommerce site with its own data.
             </p>
           </div>
 

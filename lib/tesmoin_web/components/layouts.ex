@@ -71,31 +71,41 @@ defmodule TesmoinWeb.Layouts do
                 class="flex items-center"
               >
                 <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
-                <select
-                  id="store-switcher"
-                  name="store_id"
-                  phx-hook=".StoreSwitcher"
-                  disabled={@stores == []}
-                  class="rounded-lg border border-[color-mix(in_oklab,var(--tes-primary)_22%,white)] bg-white/80 px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[color-mix(in_oklab,var(--tes-primary)_30%,white)] cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                >
-                  <%= if @stores == [] do %>
-                    <option value="">No accessible stores</option>
-                  <% else %>
-                    <%= for store <- @stores do %>
-                      <option
-                        value={store.id}
-                        selected={@current_store && @current_store.id == store.id}
-                      >
-                        {store.name}
-                      </option>
+                <div class="relative">
+                  <.icon
+                    name="hero-building-storefront"
+                    class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500"
+                  />
+                  <select
+                    id="store-switcher"
+                    name="store_id"
+                    phx-hook=".StoreSwitcher"
+                    disabled={@stores == []}
+                    class="h-9 rounded-lg border border-[color-mix(in_oklab,var(--tes-primary)_22%,white)] bg-white/80 pl-9 pr-3 text-sm font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[color-mix(in_oklab,var(--tes-primary)_30%,white)] cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  >
+                    <%= if @stores == [] do %>
+                      <option value="">No accessible stores</option>
+                    <% else %>
+                      <%= for store <- @stores do %>
+                        <option
+                          value={store.id}
+                          selected={@current_store && @current_store.id == store.id}
+                        >
+                          {store.name}
+                        </option>
+                      <% end %>
                     <% end %>
-                  <% end %>
-                </select>
+                  </select>
+                </div>
               </form>
 
-              <span class="hidden rounded-full bg-white px-3 py-1 text-xs font-medium text-neutral-ink shadow-sm sm:inline">
+              <.link
+                href={~p"/admin_users/settings"}
+                class="hidden h-9 items-center gap-1.5 rounded-full bg-white px-3 text-sm font-medium text-neutral-ink shadow-sm transition-colors hover:bg-[color-mix(in_oklab,var(--tes-secondary)_70%,white)] sm:inline-flex"
+              >
+                <.icon name="hero-user-circle" class="size-4 text-slate-500" />
                 {@current_scope.admin_user.email}
-              </span>
+              </.link>
             <% else %>
               <%= unless @hide_public_auth_action do %>
                 <.link href={~p"/admin_users/log-in"} class="backoffice-button-primary">Log in</.link>
@@ -129,8 +139,7 @@ defmodule TesmoinWeb.Layouts do
   @nav_items [
     %{id: :dashboard, label: "Dashboard", icon: "hero-squares-2x2", path: "/"},
     %{id: :stores, label: "Stores", icon: "hero-building-storefront", path: "/stores"},
-    %{id: :team, label: "Team", icon: "hero-users", path: "/team"},
-    %{id: :settings, label: "Settings", icon: "hero-cog-6-tooth", path: "/admin_users/settings"}
+    %{id: :team, label: "Team", icon: "hero-users", path: "/team"}
   ]
 
   @doc """
@@ -212,30 +221,6 @@ defmodule TesmoinWeb.Layouts do
     <div id={@id} aria-live="polite">
       <.flash kind={:info} flash={@flash} />
       <.flash kind={:error} flash={@flash} />
-
-      <.flash
-        id="client-error"
-        kind={:error}
-        title={gettext("We can't find the internet")}
-        phx-disconnected={show(".phx-client-error #client-error") |> JS.remove_attribute("hidden")}
-        phx-connected={hide("#client-error") |> JS.set_attribute({"hidden", ""})}
-        hidden
-      >
-        {gettext("Attempting to reconnect")}
-        <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
-      </.flash>
-
-      <.flash
-        id="server-error"
-        kind={:error}
-        title={gettext("Something went wrong!")}
-        phx-disconnected={show(".phx-server-error #server-error") |> JS.remove_attribute("hidden")}
-        phx-connected={hide("#server-error") |> JS.set_attribute({"hidden", ""})}
-        hidden
-      >
-        {gettext("Attempting to reconnect")}
-        <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
-      </.flash>
     </div>
     """
   end

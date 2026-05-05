@@ -57,8 +57,7 @@ defmodule TesmoinWeb.StoreLive.New do
           <h1 class="text-2xl font-bold text-slate-800">Add a store</h1>
 
           <p class="mt-1 text-sm text-slate-500">
-            Connect an ecommerce storefront to this node. Each store has its own silo of reviews,
-            orders, and analytics.
+            Each store represents an independent ecommerce site with its own data.
           </p>
         </div>
 
@@ -105,7 +104,9 @@ defmodule TesmoinWeb.StoreLive.New do
               required
             />
             <div class="pt-2 flex gap-3">
-              <.link navigate={~p"/"} class="backoffice-button-secondary px-5 py-2.5">Cancel</.link>
+              <.link navigate={~p"/stores"} class="backoffice-button-secondary px-5 py-2.5">
+                Cancel
+              </.link>
               <button type="submit" class="backoffice-button-primary flex-1 py-2.5">
                 Create store
               </button>

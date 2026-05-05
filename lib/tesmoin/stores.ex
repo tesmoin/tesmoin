@@ -12,22 +12,14 @@ defmodule Tesmoin.Stores do
   alias Tesmoin.Repo
   alias Tesmoin.Accounts.Scope
   alias Tesmoin.Stores.Store
-  alias Tesmoin.Stores.StoreMembership
 
   @doc "Returns all stores."
   def list_stores do
     Repo.all(from s in Store, order_by: [asc: s.inserted_at])
   end
 
-  @doc "Returns stores the admin user is a member of."
-  def list_stores_for_user(user_id) when is_integer(user_id) do
-    Store
-    |> join(:inner, [s], m in StoreMembership, on: m.store_id == s.id)
-    |> where([_s, m], m.user_id == ^user_id)
-    |> order_by([s, _m], asc: s.inserted_at)
-    |> distinct(true)
-    |> Repo.all()
-  end
+  @doc "Returns all stores accessible to a user (all stores, membership is not enforced)."
+  def list_stores_for_user(_user_id), do: list_stores()
 
   @doc "Returns the total number of stores on this node."
   def count_stores do
@@ -40,19 +32,9 @@ defmodule Tesmoin.Stores do
   @doc "Gets a store by slug. Returns nil if not found."
   def get_store_by_slug(slug), do: Repo.get_by(Store, slug: slug)
 
-  @doc "Creates a store and adds the creator as an admin member when scope is provided."
-  def create_store(%Scope{} = current_scope, attrs) do
-    Repo.transact(fn ->
-      with {:ok, store} <-
-             %Store{}
-             |> Store.changeset(attrs)
-             |> Repo.insert(),
-           {:ok, _membership} <- create_owner_membership(current_scope, store) do
-        {:ok, store}
-      else
-        {:error, changeset} -> Repo.rollback(changeset)
-      end
-    end)
+  @doc "Creates a store."
+  def create_store(%Scope{} = _current_scope, attrs) do
+    create_store(attrs)
   end
 
   def create_store(attrs) do
@@ -76,23 +58,5 @@ defmodule Tesmoin.Stores do
   @doc "Returns a changeset for tracking edit-form changes."
   def change_store_update(%Store{} = store, attrs \\ %{}) do
     Store.update_changeset(store, attrs)
-  end
-
-  defp create_owner_membership(%Scope{user: %{id: user_id}}, %Store{id: store_id}) do
-    %StoreMembership{}
-    |> StoreMembership.changeset(%{
-      user_id: user_id,
-      store_id: store_id
-    })
-    |> Repo.insert()
-  end
-
-  defp create_owner_membership(%Scope{user: nil}, _store) do
-    {:error,
-     Ecto.Changeset.add_error(
-       Ecto.Changeset.change(%StoreMembership{}),
-       :user_id,
-       "is required"
-     )}
   end
 end

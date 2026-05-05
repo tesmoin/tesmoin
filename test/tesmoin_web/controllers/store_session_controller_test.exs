@@ -36,31 +36,5 @@ defmodule TesmoinWeb.StoreSessionControllerTest do
       assert Accounts.get_user!(user.id).current_store_id == store2.id
       assert store1.id != store2.id
     end
-
-    test "rejects switching to a store the user cannot access", %{conn: conn} do
-      user = user_fixture()
-      other_admin = user_fixture()
-      other_scope = Scope.for_user(other_admin)
-
-      {:ok, other_store} =
-        Stores.create_store(other_scope, %{
-          "name" => "Other",
-          "slug" => "other-#{System.unique_integer([:positive])}",
-          "status" => "live"
-        })
-
-      conn =
-        conn
-        |> log_in_user(user)
-        |> post(~p"/stores/switch", %{"store_id" => Integer.to_string(other_store.id)})
-
-      assert redirected_to(conn) == ~p"/"
-
-      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
-               "You do not have access to that store."
-
-      assert get_session(conn, :current_store_id) == nil
-      assert Accounts.get_user!(user.id).current_store_id == nil
-    end
   end
 end

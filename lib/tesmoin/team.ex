@@ -11,7 +11,6 @@ defmodule Tesmoin.Team do
   alias Tesmoin.Repo
   alias Tesmoin.Accounts
   alias Tesmoin.Accounts.User
-  alias Tesmoin.Stores.{Store, StoreMembership}
   alias Tesmoin.Team.MemberInvitation
 
   # ---------------------------------------------------------------------------
@@ -22,7 +21,9 @@ defmodule Tesmoin.Team do
   def list_members do
     User
     |> order_by([u], [
-      fragment("CASE u0.role WHEN 'admin' THEN 1 WHEN 'editor' THEN 2 WHEN 'moderator' THEN 3 ELSE 4 END"),
+      fragment(
+        "CASE u0.role WHEN 'admin' THEN 1 WHEN 'editor' THEN 2 WHEN 'moderator' THEN 3 ELSE 4 END"
+      ),
       asc: u.inserted_at
     ])
     |> Repo.all()
@@ -217,7 +218,6 @@ defmodule Tesmoin.Team do
       true ->
         Repo.transact(fn ->
           user = find_or_create_user!(invitation.email, invitation.role)
-          create_memberships_for_all_stores!(user)
           mark_accepted!(invitation)
           {:ok, user}
         end)
@@ -241,35 +241,16 @@ defmodule Tesmoin.Team do
     end
   end
 
-  defp create_memberships_for_all_stores!(user) do
-    Store
-    |> select([s], s.id)
-    |> Repo.all()
-    |> Enum.each(fn store_id ->
-      %StoreMembership{}
-      |> StoreMembership.changeset(%{
-        user_id: user.id,
-        store_id: store_id
-      })
-      |> Repo.insert(on_conflict: :nothing)
-    end)
-  end
-
-  defp mark_accepted!(invitation) do
-    invitation
-    |> Ecto.Changeset.change(accepted_at: DateTime.utc_now(:second))
-    |> Repo.update!()
-  end
-
   # ---------------------------------------------------------------------------
   # Store memberships helpers
   # ---------------------------------------------------------------------------
 
   @doc "Returns all memberships for the given store."
-  def list_store_memberships(store_id) do
-    StoreMembership
-    |> where([m], m.store_id == ^store_id)
-    |> preload(:user)
-    |> Repo.all()
+  def list_store_memberships(_store_id), do: []
+
+  defp mark_accepted!(invitation) do
+    invitation
+    |> Ecto.Changeset.change(accepted_at: DateTime.utc_now(:second))
+    |> Repo.update!()
   end
 end

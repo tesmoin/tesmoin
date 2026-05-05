@@ -5,7 +5,6 @@ defmodule TesmoinWeb.UserLive.SettingsTest do
   alias Tesmoin.Accounts
   alias Tesmoin.Accounts.User
   alias Tesmoin.Repo
-  alias Tesmoin.Stores.{Store, StoreMembership}
   import Phoenix.LiveViewTest
   import Tesmoin.AccountsFixtures
 
@@ -122,8 +121,6 @@ defmodule TesmoinWeb.UserLive.SettingsTest do
     test "blocks deleting own account when user is the only store admin", %{conn: conn} do
       user = user_fixture()
       Repo.delete_all(from(u in User, where: u.id != ^user.id))
-      store = store_fixture()
-      _membership = membership_fixture(user, store, "admin")
 
       {:ok, lv, _html} =
         conn
@@ -149,9 +146,6 @@ defmodule TesmoinWeb.UserLive.SettingsTest do
     test "allows deleting own account after another admin exists", %{conn: conn} do
       user = user_fixture()
       another_admin = user_fixture()
-      store = store_fixture()
-      _membership_1 = membership_fixture(user, store, "admin")
-      _membership_2 = membership_fixture(another_admin, store, "admin")
 
       {:ok, lv, _html} =
         conn
@@ -234,25 +228,5 @@ defmodule TesmoinWeb.UserLive.SettingsTest do
       assert path == ~p"/users/log-in"
       assert flash == %{}
     end
-  end
-
-  defp store_fixture(attrs \\ %{}) do
-    unique = System.unique_integer([:positive])
-
-    default_attrs = %{
-      name: "Store #{unique}",
-      slug: "store-#{unique}",
-      status: "live"
-    }
-
-    %Store{}
-    |> Store.changeset(Map.merge(default_attrs, attrs))
-    |> Repo.insert!()
-  end
-
-  defp membership_fixture(user, store, _role) do
-    %StoreMembership{}
-    |> StoreMembership.changeset(%{user_id: user.id, store_id: store.id})
-    |> Repo.insert!()
   end
 end

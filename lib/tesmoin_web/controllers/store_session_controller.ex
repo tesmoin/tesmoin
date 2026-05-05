@@ -7,29 +7,18 @@ defmodule TesmoinWeb.StoreSessionController do
   def create(conn, %{"store_id" => store_id}) do
     current_scope = conn.assigns.current_scope
     parsed_store_id = String.to_integer(store_id)
+    store = Stores.get_store!(parsed_store_id)
 
-    if member_store?(current_scope.user.id, parsed_store_id) do
-      case Accounts.set_current_store(current_scope.user, parsed_store_id) do
-        {:ok, _user} ->
-          conn
-          |> put_session(:current_store_id, parsed_store_id)
-          |> redirect(to: ~p"/")
+    case Accounts.set_current_store(current_scope.user, store.id) do
+      {:ok, _user} ->
+        conn
+        |> put_session(:current_store_id, parsed_store_id)
+        |> redirect(to: ~p"/")
 
-        {:error, _changeset} ->
-          conn
-          |> put_flash(:error, "Could not update current store. Please try again.")
-          |> redirect(to: ~p"/")
-      end
-    else
-      conn
-      |> put_flash(:error, "You do not have access to that store.")
-      |> redirect(to: ~p"/")
+      {:error, _changeset} ->
+        conn
+        |> put_flash(:error, "Could not update current store. Please try again.")
+        |> redirect(to: ~p"/")
     end
-  end
-
-  defp member_store?(user_id, store_id) do
-    user_id
-    |> Stores.list_stores_for_user()
-    |> Enum.any?(&(&1.id == store_id))
   end
 end

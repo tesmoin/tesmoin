@@ -3,7 +3,6 @@ defmodule TesmoinWeb.TeamLiveTest do
 
   alias Tesmoin.Repo
   alias Tesmoin.Accounts.User
-  alias Tesmoin.Stores.{Store, StoreMembership}
   import Phoenix.LiveViewTest
   import Tesmoin.AccountsFixtures
 
@@ -52,9 +51,6 @@ defmodule TesmoinWeb.TeamLiveTest do
     test "admin can change role for a non-admin member", %{conn: conn} do
       user = user_fixture(%{role: "admin"})
       member = user_fixture(%{role: "moderator"})
-      store = store_fixture()
-      _admin_membership = membership_fixture(user, store)
-      _member_membership = membership_fixture(member, store)
 
       {:ok, lv, _html} =
         conn
@@ -72,9 +68,6 @@ defmodule TesmoinWeb.TeamLiveTest do
     test "admin cannot edit another admin role", %{conn: conn} do
       user = user_fixture(%{role: "admin"})
       other_admin = user_fixture(%{role: "admin"})
-      store = store_fixture()
-      _admin_membership_1 = membership_fixture(user, store)
-      _admin_membership_2 = membership_fixture(other_admin, store)
 
       {:ok, _lv, html} =
         conn
@@ -84,25 +77,5 @@ defmodule TesmoinWeb.TeamLiveTest do
       refute html =~ "member-role-form-#{other_admin.id}"
       assert html =~ "Admin"
     end
-  end
-
-  defp store_fixture(attrs \\ %{}) do
-    unique = System.unique_integer([:positive])
-
-    default_attrs = %{
-      name: "Store #{unique}",
-      slug: "store-#{unique}",
-      status: "live"
-    }
-
-    %Store{}
-    |> Store.changeset(Map.merge(default_attrs, attrs))
-    |> Repo.insert!()
-  end
-
-  defp membership_fixture(user, store) do
-    %StoreMembership{}
-    |> StoreMembership.changeset(%{user_id: user.id, store_id: store.id})
-    |> Repo.insert!()
   end
 end

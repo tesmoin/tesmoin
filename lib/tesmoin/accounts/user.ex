@@ -2,7 +2,7 @@ defmodule Tesmoin.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Tesmoin.Stores.{Store, StoreMembership}
+  alias Tesmoin.Stores.Store
   @valid_roles ~w(admin editor moderator)
 
   schema "users" do
@@ -13,7 +13,6 @@ defmodule Tesmoin.Accounts.User do
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
 
-    has_many :store_memberships, StoreMembership
     belongs_to :current_store, Store
 
     timestamps(type: :utc_datetime)
